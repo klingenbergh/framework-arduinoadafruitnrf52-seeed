@@ -1,7 +1,7 @@
 #ifndef _SEEED_XIAO_NRF52840_SENSE_H_
 #define _SEEED_XIAO_NRF52840_SENSE_H_
 
-#define TARGET_SEEED_XIAO_NRF52840_SENSE
+// #define TARGET_SEEED_XIAO_NRF52840_SENSE
 
 /** Master clock frequency */
 #define VARIANT_MCK       (64000000ul)
