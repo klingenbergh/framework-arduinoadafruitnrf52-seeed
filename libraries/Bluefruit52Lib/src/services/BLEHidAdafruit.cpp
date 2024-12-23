@@ -37,13 +37,14 @@
 #include "bluefruit.h"
 
 // For using USB HID descriptor template
-#include "class/hid/hid_device.h"
+#include "usb/class/hid/hid_device.h"
 
 enum
 {
   REPORT_ID_KEYBOARD = 1,
   REPORT_ID_CONSUMER_CONTROL,
-  REPORT_ID_MOUSE
+  REPORT_ID_MOUSE,
+  REPORT_ID_GAMEPAD
 };
 
 uint8_t const hid_report_descriptor[] =

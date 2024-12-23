@@ -29,8 +29,6 @@ extern uint32_t bootloaderVersion;
 
 extern void init(void);
 
-uint32_t readResetReason(void);
-
 void enterSerialDfu(void);
 void enterOTADfu(void);
 void enterUf2Dfu(void);

@@ -24,7 +24,7 @@ NOTICE: This file has been modified by Nordic Semiconductor ASA.
 
     .syntax unified
     .arch armv7e-m
-/* Adafruit define stack & heap inside linker script */
+/* define stack & heap inside linker script */
 /*
 #ifdef __STARTUP_CONFIG
 #include "startup_config.h"
@@ -244,7 +244,7 @@ Reset_Handler:
 
 .L_loop1_done:
 
-/* Adafruit fill stack region with pattern 0xADADADAD */
+/* fill stack region with pattern 0xADADADAD */
     ldr     r0, =__StackLimit
     ldr     r1, =__StackSize
     ldr     r2, =0xADADADAD

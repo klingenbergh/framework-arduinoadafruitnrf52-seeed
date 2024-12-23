@@ -34,7 +34,7 @@
 #include <Adafruit_LittleFS.h>
 #include <InternalFileSystem.h>
 
-#include <Adafruit_TinyUSB.h>
+//#include <TinyUSB.h>
 
 // Use built-in buttons if available, else use A0, A1
 #ifdef PIN_BUTTON1

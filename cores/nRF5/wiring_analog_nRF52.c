@@ -34,7 +34,7 @@ static uint32_t saadcSampleTime = SAADC_CH_CONFIG_TACQ_3us;
 
 static bool saadcBurst = SAADC_CH_CONFIG_BURST_Disabled;
 
-// Note: Adafruit use seperated HardwarePWM class
+// Note: use seperated HardwarePWM class
 
 static int readResolution = 10;
 void analogReadResolution( int res )

@@ -36,7 +36,7 @@
 #define BLEMIDI_H_
 
 #include "bluefruit_common.h"
-#include "utility/adafruit_fifo.h"
+#include "utility/fifo.h"
 
 #include "BLECharacteristic.h"
 #include "BLEService.h"
@@ -89,7 +89,7 @@ class BLEMidi: public BLEService, public Stream
   private:
     BLECharacteristic _io;
 
-    Adafruit_FIFO     _rxd_fifo;
+    FIFO     _rxd_fifo;
     midi_write_cb_t   _write_cb;
 
     void* _midilib_obj;

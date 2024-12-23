@@ -37,7 +37,7 @@
 #define BLEUART_H_
 
 #include "bluefruit_common.h"
-#include "utility/adafruit_fifo.h"
+#include "utility/fifo.h"
 
 #include "BLECharacteristic.h"
 #include "BLEService.h"
@@ -100,11 +100,11 @@ class BLEUart : public BLEService, public Stream
     BLECharacteristic _rxd;
 
     // RXD
-    Adafruit_FIFO* _rx_fifo;
+    FIFO* _rx_fifo;
     uint16_t       _rx_fifo_depth;
 
     // TXD
-    Adafruit_FIFO* _tx_fifo;
+    FIFO* _tx_fifo;
     bool           _tx_buffered; // default is false
 
     // Callbacks

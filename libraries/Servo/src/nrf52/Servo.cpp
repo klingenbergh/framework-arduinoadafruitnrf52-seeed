@@ -19,12 +19,10 @@
   Modified by Henry Gabryjelski to add ownershp support
 */
 
-#if defined(ARDUINO_ARCH_NRF52) || defined(ARDUINO_NRF52_ADAFRUIT)
+#if defined(ARDUINO_ARCH_NRF52) || defined(ARDUINO_NRF52)
 
 #include <Arduino.h>
 #include <Servo.h>
-
-#include <Adafruit_TinyUSB.h> // for Serial
 
 enum
 {

@@ -198,7 +198,7 @@ void GPIOTE_IRQHandler()
     // but ALWAYS clear the event to prevent an interrupt storm.
     if (channelMap[ch] != -1 && callbacksInt[ch]) {
       if ( callbackDeferred[ch] ) {
-        // Adafruit defer callback to non-isr if configured so
+        // defer callback to non-isr if configured so
         ada_callback(NULL, 0, callbacksInt[ch]);
       } else {
         callbacksInt[ch]();

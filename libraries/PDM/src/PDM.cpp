@@ -23,7 +23,7 @@
 #include "PDM.h"
 #include <hal/nrf_pdm.h>
 
-#include <Adafruit_TinyUSB.h> // for Serial
+
 
 #define DEFAULT_PDM_GAIN     20
 #define PDM_IRQ_PRIORITY     7
@@ -100,11 +100,11 @@ int PDMClass::begin(int channels, long sampleRate)
 
   switch (channels) {
     case 2:
-      nrf_pdm_mode_set(NRF_PDM, NRF_PDM_MODE_STEREO, NRF_PDM_EDGE_LEFTFALLING);
+      nrf_pdm_mode_set(NRF_PDM, NRF_PDM_MODE_STEREO, NRF_PDM_EDGE_LEFTRISING);
       break;
 
     case 1:
-      nrf_pdm_mode_set(NRF_PDM, NRF_PDM_MODE_MONO, NRF_PDM_EDGE_LEFTFALLING);
+      nrf_pdm_mode_set(NRF_PDM, NRF_PDM_MODE_MONO, NRF_PDM_EDGE_LEFTRISING);
       break;
 
     default:

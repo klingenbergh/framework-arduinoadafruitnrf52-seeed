@@ -18,7 +18,7 @@
  */
 
 #include <Arduino.h>
-#include <Adafruit_TinyUSB.h> // for Serial
+
 
 int ledPin = LED_RED;    // LED connected to digital pin 9
 

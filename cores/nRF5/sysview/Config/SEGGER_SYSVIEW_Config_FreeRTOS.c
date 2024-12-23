@@ -63,7 +63,7 @@ extern const SEGGER_SYSVIEW_OS_API SYSVIEW_X_OS_TraceAPI;
 **********************************************************************
 */
 // The application name to be displayed in SystemViewer
-#define SYSVIEW_APP_NAME        "Adafruit_nRF52_Arduino"
+#define SYSVIEW_APP_NAME        "nRF52_Arduino"
 
 // The target device name
 #define SYSVIEW_DEVICE_NAME     "nRF52"

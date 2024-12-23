@@ -28,7 +28,7 @@
 #include <wiring_private.h>
 #include <assert.h>
 
-#include <Adafruit_TinyUSB.h> // for Serial
+
 
 SPIClass::SPIClass(NRF_SPIM_Type *p_spi, uint8_t uc_pinMISO, uint8_t uc_pinSCK, uint8_t uc_pinMOSI)
 {
@@ -208,7 +208,7 @@ void SPIClass::transfer(const void *tx_buf, void *rx_buf, size_t count)
   while (count)
   {
     // each transfer can only up to 64KB (16-bit) bytes
-    const size_t xfer_len = min(count, (size_t) UINT16_MAX);
+    const size_t xfer_len = min((uint16_t) count, UINT16_MAX);
 
     nrfx_spim_xfer_desc_t xfer_desc =
     {

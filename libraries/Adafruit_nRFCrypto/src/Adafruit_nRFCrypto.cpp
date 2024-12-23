@@ -29,7 +29,7 @@
 #include "nrf_cc310/include/sns_silib.h"
 #include "Adafruit_nRFCrypto.h"
 
-#include <Adafruit_TinyUSB.h> // for Serial
+
 
 // Only nRF52840 has CC310
 #ifndef NRF_CRYPTOCELL

@@ -76,4 +76,16 @@ caddr_t _sbrk( int incr )
   return (caddr_t) prev_heap;
 }
 
+void __malloc_lock(struct _reent *ptr)
+{
+  (void) ptr;
+  vTaskSuspendAll();
+}
+
+void __malloc_unlock(struct _reent *ptr)
+{
+  (void) ptr;
+  xTaskResumeAll();
+}
+
 }

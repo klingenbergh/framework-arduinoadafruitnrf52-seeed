@@ -20,7 +20,7 @@
 #pragma once
 
 #include <nrf.h>
-
+#include "../usb/arduino/USBD_CDC.h"
 #include "HardwareSerial.h"
 #include "RingBuffer.h"
 #include "rtos.h"
@@ -69,7 +69,6 @@ class Uart : public HardwareSerial
 
     bool _begun;
 
-    // Adafruit
     SemaphoreHandle_t _end_tx_sem;
 };
 
@@ -96,7 +95,10 @@ class Uart : public HardwareSerial
 #else
   #define SERIAL_PORT_MONITOR         Serial
   #define SERIAL_PORT_USBVIRTUAL      Serial
-
+ //#include "../usb/USBD_CDC.h"
+// //extern USBD_CDC Serial;
+// #define SerialTinyUSB Serial
+// extern USBD_CDC SerialTinyUSB;
   #define SERIAL_PORT_HARDWARE        Serial1
   #define SERIAL_PORT_HARDWARE_OPEN   Serial1
 

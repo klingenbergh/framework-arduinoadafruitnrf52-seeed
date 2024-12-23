@@ -1,13 +1,13 @@
 /**************************************************************************/
 /*!
     @file     rtos.h
-    @author   hathach (tinyusb.org)
+    @author   
 
     @section LICENSE
 
     Software License Agreement (BSD License)
 
-    Copyright (c) 2018, Adafruit Industries (adafruit.com)
+    
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,8 @@
 #include "queue.h"
 #include "semphr.h"
 
+#define DEBUG_MALLOC    1
+
 #define DELAY_FOREVER   portMAX_DELAY
 
 enum
@@ -61,13 +63,26 @@ enum
   TASK_PRIO_HIGHEST = 4,
 };
 
-#define ms2tick       pdMS_TO_TICKS
-#define tick2ms(tck)  ( ( ((uint64_t)(tck)) * 1000) / configTICK_RATE_HZ )
-#define tick2us(tck)  ( ( ((uint64_t)(tck)) * 1000000) / configTICK_RATE_HZ )
+#define ms2tick              pdMS_TO_TICKS
 
-// legacy thread-safe malloc/free
-#define rtos_malloc   malloc
-#define rtos_free     free
+#define tick2ms(tck)         ( ( ((uint64_t)(tck)) * 1000) / configTICK_RATE_HZ )
+#define tick2us(tck)         ( ( ((uint64_t)(tck)) * 1000000) / configTICK_RATE_HZ )
+
+#if DEBUG_MALLOC
+  #define rtos_malloc_type(_type)   ({ LOG_LV2("MALLOC", #_type " = %d bytes", sizeof(_type)); ((_type*) rtos_malloc(sizeof(_type))); })
+#else
+  #define rtos_malloc_type(_type)   ((_type*) rtos_malloc(sizeof(_type)))
+#endif
+
+static inline void* rtos_malloc(size_t _size)
+{
+  return (xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) ? malloc(_size) : pvPortMalloc(_size);
+}
+
+static inline void rtos_free( void *pv )
+{
+  return (xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) ? free(pv) : vPortFree(pv);
+}
 
 // Visible only with C++
 #ifdef __cplusplus

@@ -143,7 +143,7 @@ void BLEUart::bufferTXD(bool enable)
     // Create FIFO for TXD
     if ( _tx_fifo == NULL )
     {
-      _tx_fifo = new Adafruit_FIFO(1);
+      _tx_fifo = new FIFO(1);
       _tx_fifo->begin( Bluefruit.getMaxMtu(BLE_GAP_ROLE_PERIPH) );
     }
   }else
@@ -154,7 +154,7 @@ void BLEUart::bufferTXD(bool enable)
 
 err_t BLEUart::begin(void)
 {
-  _rx_fifo = new Adafruit_FIFO(1);
+  _rx_fifo = new FIFO(1);
   _rx_fifo->begin(_rx_fifo_depth);
 
   // Invoke base class begin()

@@ -1,13 +1,13 @@
 /**************************************************************************/
 /*!
     @file     common_func.h
-    @author   hathach (tinyusb.org)
+    @author   
 
     @section LICENSE
 
     Software License Agreement (BSD License)
 
-    Copyright (c) 2018, Adafruit Industries (adafruit.com)
+    
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -41,7 +41,7 @@
 #ifdef __cplusplus
   extern "C++" {
   // namespace and templates must be outside the `extern "C"` declaration...
-  namespace ADAFRUIT_DETAIL
+  namespace DETAIL
   {
       template <typename T, size_t N>
       constexpr size_t arrcount_fails_if_not_array(T const (&)[N]) noexcept
@@ -51,7 +51,7 @@
   }
   }
   extern "C" {
-  #define arrcount(arr) ADAFRUIT_DETAIL::arrcount_fails_if_not_array(arr)
+  #define arrcount(arr) DETAIL::arrcount_fails_if_not_array(arr)
   #define ADA_STATIC_ASSERT(const_expr, message)   static_assert(const_expr, message)
 #elif __STDC_VERSION__ >= 201112L
   // Even C can have type-safety for equivalent of ARRAY_SIZE() macro, when using GCC (which this BSP does)
@@ -176,12 +176,12 @@ const char* dbg_err_str(int32_t err_id); // TODO move to other place
 
 #if CFG_DEBUG
 
-#define PRINT_LOCATION()      PRINTF("%s: %d:\r\n", __PRETTY_FUNCTION__, __LINE__)
-#define PRINT_MESS(x)         PRINTF("%s: %d: %s \r\n"   , __FUNCTION__, __LINE__, (char*)(x))
-#define PRINT_HEAP()          if (CFG_DEBUG >= 3) PRINTF("\n%s: %d: Heap free: %d\r\n", __FUNCTION__, __LINE__, util_heap_get_free_size())
-#define PRINT_STR(x)          PRINTF("%s: %d: " #x " = %s\r\n"   , __FUNCTION__, __LINE__, (char*)(x) )
-#define PRINT_INT(x)          PRINTF("%s: %d: " #x " = %ld\r\n"  , __FUNCTION__, __LINE__, (uint32_t) (x) )
-#define PRINT_FLOAT(x)        PRINTF("%s: %d: " #x " = %f\r\n"  , __FUNCTION__, __LINE__, (float) (x) )
+#define PRINT_LOCATION()      PRINTF("%s: %d:\n", __PRETTY_FUNCTION__, __LINE__)
+#define PRINT_MESS(x)         PRINTF("%s: %d: %s \n"   , __FUNCTION__, __LINE__, (char*)(x))
+#define PRINT_HEAP()          if (CFG_DEBUG >= 3) PRINTF("\n%s: %d: Heap free: %d\n", __FUNCTION__, __LINE__, util_heap_get_free_size())
+#define PRINT_STR(x)          PRINTF("%s: %d: " #x " = %s\n"   , __FUNCTION__, __LINE__, (char*)(x) )
+#define PRINT_INT(x)          PRINTF("%s: %d: " #x " = %ld\n"  , __FUNCTION__, __LINE__, (uint32_t) (x) )
+#define PRINT_FLOAT(x)        PRINTF("%s: %d: " #x " = %f\n"  , __FUNCTION__, __LINE__, (float) (x) )
 
 #define PRINT_HEX(x) \
   do {\
@@ -196,7 +196,7 @@ const char* dbg_err_str(int32_t err_id); // TODO move to other place
     uint8_t const* p8 = (uint8_t const*) (buf);\
     PRINTF(#buf ": ");\
     for(uint32_t i=0; i<(n); i++) {\
-      if (i%16 == 0) PRINTF("\r\n"); \
+      if (i%16 == 0) PRINTF("\n"); \
       PRINTF("%02x ", p8[i]); \
     }\
     PRINTF("\r\n");\
@@ -212,7 +212,7 @@ const char* dbg_err_str(int32_t err_id); // TODO move to other place
 #define ADALOG_BUFFER(_tag, _buf, _n) \
   do {\
     const char * _xtag = _tag;\
-    if ( _xtag ) PRINTF("%-6s: len = %d\r\n", _xtag, _n);\
+    if ( _xtag ) PRINTF("%-6s: len = %d\n", _xtag, _n);\
     dbgDumpMemory(_buf, 1, _n, true);\
   }while(0)
 

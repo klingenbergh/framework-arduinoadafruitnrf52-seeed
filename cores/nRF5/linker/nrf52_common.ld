@@ -46,7 +46,7 @@ OUTPUT_FORMAT ("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
  */
 ENTRY(Reset_Handler)
 
-/* Adafruit
+/* 
  * Stack is used by ISR and SoftDevice only, other code run on thread's allocated stack from heap. 
  * Maximum stack used by S132's spec is 1536 byte. Therefore 2KB should be enough
  */

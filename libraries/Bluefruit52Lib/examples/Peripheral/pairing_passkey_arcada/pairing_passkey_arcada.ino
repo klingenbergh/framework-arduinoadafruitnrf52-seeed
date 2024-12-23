@@ -39,7 +39,7 @@
 #include <Adafruit_LittleFS.h>
 #include <InternalFileSystem.h>
 
-#include <Adafruit_TinyUSB.h>
+//#include <TinyUSB.h>
 #include <Adafruit_Arcada.h>
 
 Adafruit_Arcada arcada;

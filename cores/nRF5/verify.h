@@ -1,15 +1,12 @@
 /******************************************************************************/
 /*!
     @file     verify.h
-    @author   hathach (tinyusb.org)
+    @author   
 
     @section LICENSE
 
     Software License Agreement (BSD License)
 
-    Copyright (c) 2013, K. Townsend (microBuilder.eu)
-    Copyright (c) 2018, Adafruit Industries (adafruit.com)
-    Copyright (c) 2016, hathach (tinyusb.org)
 
     All rights reserved.
 

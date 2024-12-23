@@ -36,7 +36,7 @@
 
 #include "RotaryEncoder.h"
 
-#include <Adafruit_TinyUSB.h> // for Serial
+
 
 class HwRotaryEncoder RotaryEncoder;
 

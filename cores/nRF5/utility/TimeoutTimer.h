@@ -1,13 +1,12 @@
 /**************************************************************************/
 /*!
     @file     TimeoutTimer.h
-    @author   hathach (tinyusb.org)
+    @author   
 
     @section LICENSE
 
     Software License Agreement (BSD License)
 
-    Copyright (c) 2018, Adafruit Industries (adafruit.com)
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without

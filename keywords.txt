@@ -1,5 +1,5 @@
 #######################################
-# Syntax Coloring Map For Adafruit Bluefruit nRF52 Feather
+# Syntax Coloring Map For nRF52
 #######################################
 
 #######################################
@@ -7,7 +7,7 @@
 #######################################
 
 TimeoutTimer	KEYWORD1
-Adafruit_FIFO	KEYWORD1
+FIFO	        KEYWORD1
 HardwarePWM	KEYWORD1
 
 #######################################
@@ -36,6 +36,10 @@ delay_ns	KEYWORD2
 analogOversampling	KEYWORD2
 analogReadVDD	KEYWORD2
 
+# RTOS
+rtos_malloc	KEYWORD2
+rtos_free	KEYWORD2
+
 nrf52_flash_init	KEYWORD2
 nrf52_flash_erase_sector	KEYWORD2
 nrf52_flash_write	KEYWORD2
@@ -55,7 +59,7 @@ setPins	KEYWORD2
 
 
 #######################################
-# Adafruit_FIFO Methods (KEYWORD2)
+# FIFO Methods (KEYWORD2)
 #######################################
 
 clear	KEYWORD2
@@ -129,3 +133,7 @@ AR_INTERNAL_2_4	LITERAL1
 AR_INTERNAL_1_8	LITERAL1
 AR_INTERNAL_1_2	LITERAL1
 AR_VDD4	LITERAL1
+
+PIN_KEY1      LITERAL1
+PIN_KEY2      LITERAL1
+LED_GREEN   LITERAL1

@@ -8,7 +8,6 @@
 */
 
 #include <Arduino.h>
-#include <Adafruit_TinyUSB.h> // for Serial
 #include <Servo.h>
 
 Servo myservo;  // create servo object to control a servo

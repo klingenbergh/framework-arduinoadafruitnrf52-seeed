@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <Adafruit_TinyUSB.h> // for Serial
+
 
 int adcin    = A5;
 int adcvalue = 0;

@@ -37,7 +37,7 @@
 #define BLECLIENTUART_H_
 
 #include "bluefruit_common.h"
-#include "utility/adafruit_fifo.h"
+#include "utility/fifo.h"
 
 #include "BLEClientCharacteristic.h"
 #include "BLEClientService.h"
@@ -80,7 +80,7 @@ class BLEClientUart : public BLEClientService, public Stream
     BLEClientCharacteristic _txd;
     BLEClientCharacteristic _rxd;
 
-    Adafruit_FIFO     _rx_fifo;
+    FIFO              _rx_fifo;
     rx_callback_t     _rx_cb;
 
     friend void bleuart_central_notify_cb(BLEClientCharacteristic* chr, uint8_t* data, uint16_t len);

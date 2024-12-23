@@ -42,8 +42,8 @@
 #include "BLEService.h"
 
 // include for usb hid definitions
-#include <Adafruit_TinyUSB.h>
-#include "class/hid/hid.h"
+//#include <TinyUSB.h>
+#include "usb/class/hid/hid.h"
 
 extern const uint8_t hid_ascii_to_keycode[128][2];
 extern const uint8_t hid_keycode_to_ascii[128][2];

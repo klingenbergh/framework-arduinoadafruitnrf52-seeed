@@ -36,7 +36,7 @@ void setup()
   
   Bluefruit.setName("Bluefruit52 Central");
 
-  // Configure Battery client
+  // Configure Battyer client
   clientBas.begin();  
 
   // Configure DIS client

@@ -1,13 +1,13 @@
 /**************************************************************************/
 /*!
     @file     AdaCallback.cpp
-    @author   hathach (tinyusb.org)
+    @author   
 
     @section LICENSE
 
     Software License Agreement (BSD License)
 
-    Copyright (c) 2018, Adafruit Industries (adafruit.com)
+    
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -42,7 +42,7 @@ static QueueHandle_t _cb_queue = NULL;
 static uint32_t _cb_qdepth;
 static TaskHandle_t _cb_task;
 
-void adafruit_callback_task(void* arg)
+void callback_task(void* arg)
 {
   (void) arg;
 
@@ -144,7 +144,7 @@ void ada_callback_init(uint32_t stack_sz)
   _cb_qdepth = INITIAL_QUEUE_DEPTH;
   _cb_queue  = xQueueCreate(_cb_qdepth, sizeof(void*));
 
-  xTaskCreate( adafruit_callback_task, "Callback", stack_sz, NULL, TASK_PRIO_NORMAL, &_cb_task);
+  xTaskCreate( callback_task, "Callback", stack_sz, NULL, TASK_PRIO_NORMAL, &_cb_task);
 }
 
 bool ada_callback_queue_resize(uint32_t new_depth)

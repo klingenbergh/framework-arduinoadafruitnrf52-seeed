@@ -23,7 +23,7 @@
 #include <variant.h>
 #include <WInterrupts.h>
 
-#include <Adafruit_TinyUSB.h> // for Serial
+
 
 SoftwareSerial *SoftwareSerial::active_object = 0;
 char SoftwareSerial::_receive_buffer[_SS_MAX_RX_BUFF]; 

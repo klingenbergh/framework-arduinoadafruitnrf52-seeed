@@ -16,7 +16,7 @@
 // like a Segger J-Link to set them back to NFC mode!
 
 #include <Arduino.h>
-#include <Adafruit_TinyUSB.h> // for Serial
+
 
 void setup() {
   Serial.begin(115200);
