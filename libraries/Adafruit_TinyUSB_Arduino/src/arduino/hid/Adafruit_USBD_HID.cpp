@@ -24,23 +24,51 @@
 
 #include "tusb_option.h"
 
-#if CFG_TUD_ENABLED && CFG_TUD_HID
+#if TUSB_OPT_DEVICE_ENABLED && CFG_TUD_HID
 
 #include "Adafruit_USBD_HID.h"
 
-uint8_t const _ascii2keycode[128][2] = {HID_ASCII_TO_KEYCODE};
-static Adafruit_USBD_HID *_hid_instances[CFG_TUD_HID] = {0};
+#define EPOUT 0x00
+#define EPIN 0x80
 
-uint8_t Adafruit_USBD_HID::_instance_count = 0;
+uint8_t const _ascii2keycode[128][2] = {HID_ASCII_TO_KEYCODE};
+
+// TODO multiple instances
+static Adafruit_USBD_HID *_hid_dev = NULL;
+
+#ifdef ARDUINO_ARCH_ESP32
+static uint16_t hid_load_descriptor(uint8_t *dst, uint8_t *itf) {
+  // uint8_t str_index = tinyusb_add_string_descriptor("TinyUSB HID");
+  uint8_t str_index = 0;
+
+  TU_VERIFY(_hid_dev);
+
+  uint8_t ep_in = tinyusb_get_free_in_endpoint();
+  TU_VERIFY(ep_in != 0);
+  ep_in |= 0x80;
+
+  uint8_t ep_out = 0;
+  if (_hid_dev->isOutEndpointEnabled()) {
+    ep_out = tinyusb_get_free_out_endpoint();
+    TU_VERIFY(ep_out != 0);
+  }
+
+  uint16_t const desc_len =
+      _hid_dev->makeItfDesc(*itf, dst, TUD_HID_INOUT_DESC_LEN, ep_in, ep_out);
+
+  *itf += 1;
+  return desc_len;
+}
+#endif
 
 //------------- IMPLEMENTATION -------------//
+
 Adafruit_USBD_HID::Adafruit_USBD_HID(void)
     : Adafruit_USBD_HID(NULL, 0, HID_ITF_PROTOCOL_NONE, 4, false) {}
 
 Adafruit_USBD_HID::Adafruit_USBD_HID(uint8_t const *desc_report, uint16_t len,
                                      uint8_t protocol, uint8_t interval_ms,
                                      bool has_out_endpoint) {
-  _instance = INVALID_INSTANCE;
   _interval_ms = interval_ms;
   _protocol = protocol;
 
@@ -52,6 +80,13 @@ Adafruit_USBD_HID::Adafruit_USBD_HID(uint8_t const *desc_report, uint16_t len,
 
   _get_report_cb = NULL;
   _set_report_cb = NULL;
+
+#ifdef ARDUINO_ARCH_ESP32
+  // ESP32 requires setup configuration descriptor within constructor
+  _hid_dev = this;
+  uint16_t const desc_len = getInterfaceDescriptor(0, NULL, 0);
+  tinyusb_enable_interface(USB_INTERFACE_HID, desc_len, hid_load_descriptor);
+#endif
 }
 
 void Adafruit_USBD_HID::setPollInterval(uint8_t interval_ms) {
@@ -87,11 +122,11 @@ uint16_t Adafruit_USBD_HID::makeItfDesc(uint8_t itfnum, uint8_t *buf,
     return 0;
   }
 
-  uint8_t const desc_inout[] = {TUD_HID_INOUT_DESCRIPTOR(
-      itfnum, _strid, _protocol, _desc_report_len, ep_in, ep_out,
-      CFG_TUD_HID_EP_BUFSIZE, _interval_ms)};
+  uint8_t const desc_inout[] = {
+      TUD_HID_INOUT_DESCRIPTOR(itfnum, 0, _protocol, _desc_report_len, ep_in,
+                               ep_out, CFG_TUD_HID_EP_BUFSIZE, _interval_ms)};
   uint8_t const desc_in_only[] = {
-      TUD_HID_DESCRIPTOR(itfnum, _strid, _protocol, _desc_report_len, ep_in,
+      TUD_HID_DESCRIPTOR(itfnum, 0, _protocol, _desc_report_len, ep_in,
                          CFG_TUD_HID_EP_BUFSIZE, _interval_ms)};
 
   uint8_t const *desc;
@@ -110,73 +145,45 @@ uint16_t Adafruit_USBD_HID::makeItfDesc(uint8_t itfnum, uint8_t *buf,
     if (bufsize < len) {
       return 0;
     }
+
     memcpy(buf, desc, len);
   }
 
   return len;
 }
 
-uint16_t Adafruit_USBD_HID::getInterfaceDescriptor(uint8_t itfnum_deprecated,
-                                                   uint8_t *buf,
+uint16_t Adafruit_USBD_HID::getInterfaceDescriptor(uint8_t itfnum, uint8_t *buf,
                                                    uint16_t bufsize) {
-  (void)itfnum_deprecated;
-
-  uint8_t itfnum = 0;
-  uint8_t ep_in = 0;
-  uint8_t ep_out = 0;
-
-  // null buffer is used to get the length of descriptor only
-  if (buf) {
-    itfnum = TinyUSBDevice.allocInterface(1);
-    ep_in = TinyUSBDevice.allocEndpoint(TUSB_DIR_IN);
-
-    if (_out_endpoint) {
-      ep_out = TinyUSBDevice.allocEndpoint(TUSB_DIR_OUT);
-    }
-  }
-
-  return makeItfDesc(itfnum, buf, bufsize, ep_in, ep_out);
+  // usb core will automatically update endpoint number
+  return makeItfDesc(itfnum, buf, bufsize, EPIN, EPOUT);
 }
 
 bool Adafruit_USBD_HID::begin(void) {
-  if (isValid()) {
-    return true;
-  }
-
-  if (_instance_count >= CFG_TUD_HID) {
-    return false;
-  }
-
   if (!TinyUSBDevice.addInterface(*this)) {
     return false;
   }
-  _instance = _instance_count++;
-  _hid_instances[_instance] = this;
 
+  _hid_dev = this;
   return true;
 }
 
-bool Adafruit_USBD_HID::ready(void) { return tud_hid_n_ready(_instance); }
+bool Adafruit_USBD_HID::ready(void) { return tud_hid_ready(); }
 
 bool Adafruit_USBD_HID::sendReport(uint8_t report_id, void const *report,
                                    uint8_t len) {
-  return tud_hid_n_report(_instance, report_id, report, len);
+  return tud_hid_report(report_id, report, len);
 }
 
 bool Adafruit_USBD_HID::sendReport8(uint8_t report_id, uint8_t num) {
-  return tud_hid_n_report(_instance, report_id, &num, sizeof(num));
+  return tud_hid_report(report_id, &num, sizeof(num));
 }
 
 bool Adafruit_USBD_HID::sendReport16(uint8_t report_id, uint16_t num) {
-  return tud_hid_n_report(_instance, report_id, &num, sizeof(num));
+  return tud_hid_report(report_id, &num, sizeof(num));
 }
 
 bool Adafruit_USBD_HID::sendReport32(uint8_t report_id, uint32_t num) {
-  return tud_hid_n_report(_instance, report_id, &num, sizeof(num));
-}
-
-uint8_t Adafruit_USBD_HID::getProtocol() {
-  return tud_hid_n_get_protocol(_instance);
+  return tud_hid_report(report_id, &num, sizeof(num));
 }
 
 //------------- TinyUSB callbacks -------------//
@@ -186,13 +193,13 @@ extern "C" {
 // Application return pointer to descriptor, whose contents must exist long
 // enough for transfer to complete
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t itf) {
-  Adafruit_USBD_HID *p_hid = _hid_instances[itf];
+  (void)itf;
 
-  if (!p_hid) {
+  if (!_hid_dev) {
     return NULL;
   }
 
-  return p_hid->_desc_report;
+  return _hid_dev->_desc_report;
 }
 
 // Invoked when received GET_REPORT control request
@@ -201,13 +208,13 @@ uint8_t const *tud_hid_descriptor_report_cb(uint8_t itf) {
 uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id,
                                hid_report_type_t report_type, uint8_t *buffer,
                                uint16_t reqlen) {
-  Adafruit_USBD_HID *p_hid = _hid_instances[itf];
+  (void)itf;
 
-  if (!(p_hid && p_hid->_get_report_cb)) {
+  if (!(_hid_dev && _hid_dev->_get_report_cb)) {
     return 0;
   }
 
-  return p_hid->_get_report_cb(report_id, report_type, buffer, reqlen);
+  return _hid_dev->_get_report_cb(report_id, report_type, buffer, reqlen);
 }
 
 // Invoked when received SET_REPORT control request or
@@ -215,13 +222,13 @@ uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id,
 void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
                            hid_report_type_t report_type, uint8_t const *buffer,
                            uint16_t bufsize) {
-  Adafruit_USBD_HID *p_hid = _hid_instances[itf];
+  (void)itf;
 
-  if (!(p_hid && p_hid->_set_report_cb)) {
+  if (!(_hid_dev && _hid_dev->_set_report_cb)) {
     return;
   }
 
-  p_hid->_set_report_cb(report_id, report_type, buffer, bufsize);
+  _hid_dev->_set_report_cb(report_id, report_type, buffer, bufsize);
 }
 
 } // extern "C"
@@ -232,7 +239,7 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
 
 bool Adafruit_USBD_HID::keyboardReport(uint8_t report_id, uint8_t modifier,
                                        uint8_t keycode[6]) {
-  return tud_hid_n_keyboard_report(_instance, report_id, modifier, keycode);
+  return tud_hid_keyboard_report(report_id, modifier, keycode);
 }
 
 bool Adafruit_USBD_HID::keyboardPress(uint8_t report_id, char ch) {
@@ -245,11 +252,11 @@ bool Adafruit_USBD_HID::keyboardPress(uint8_t report_id, char ch) {
   }
   keycode[0] = _ascii2keycode[uch][1];
 
-  return tud_hid_n_keyboard_report(_instance, report_id, modifier, keycode);
+  return tud_hid_keyboard_report(report_id, modifier, keycode);
 }
 
 bool Adafruit_USBD_HID::keyboardRelease(uint8_t report_id) {
-  return tud_hid_n_keyboard_report(_instance, report_id, 0, NULL);
+  return tud_hid_keyboard_report(report_id, 0, NULL);
 }
 
 //--------------------------------------------------------------------+
@@ -262,27 +269,24 @@ bool Adafruit_USBD_HID::mouseReport(uint8_t report_id, uint8_t buttons,
   // cache mouse button for other API such as move, scroll
   _mouse_button = buttons;
 
-  return tud_hid_n_mouse_report(_instance, report_id, buttons, x, y, vertical,
-                                horizontal);
+  return tud_hid_mouse_report(report_id, buttons, x, y, vertical, horizontal);
 }
 
 bool Adafruit_USBD_HID::mouseMove(uint8_t report_id, int8_t x, int8_t y) {
-  return tud_hid_n_mouse_report(_instance, report_id, _mouse_button, x, y, 0,
-                                0);
+  return tud_hid_mouse_report(report_id, _mouse_button, x, y, 0, 0);
 }
 
 bool Adafruit_USBD_HID::mouseScroll(uint8_t report_id, int8_t scroll,
                                     int8_t pan) {
-  return tud_hid_n_mouse_report(_instance, report_id, _mouse_button, 0, 0,
-                                scroll, pan);
+  return tud_hid_mouse_report(report_id, _mouse_button, 0, 0, scroll, pan);
 }
 
 bool Adafruit_USBD_HID::mouseButtonPress(uint8_t report_id, uint8_t buttons) {
-  return tud_hid_n_mouse_report(_instance, report_id, buttons, 0, 0, 0, 0);
+  return tud_hid_mouse_report(report_id, buttons, 0, 0, 0, 0);
 }
 
 bool Adafruit_USBD_HID::mouseButtonRelease(uint8_t report_id) {
-  return tud_hid_n_mouse_report(_instance, report_id, 0, 0, 0, 0, 0);
+  return tud_hid_mouse_report(report_id, 0, 0, 0, 0, 0);
 }
 
-#endif // CFG_TUD_ENABLED
+#endif // TUSB_OPT_DEVICE_ENABLED

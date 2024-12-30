@@ -17,9 +17,6 @@
  * Note: Adafruit fork of SdFat enabled ENABLE_EXTENDED_TRANSFER_CLASS and FAT12_SUPPORT
  * in SdFatConfig.h, which is needed to run SdFat on external flash. You can use original
  * SdFat library and manually change those macros
- *
- * Note2: If your flash is not formatted as FAT12 previously, you could format it using
- * follow sketch https://github.com/adafruit/Adafruit_SPIFlash/tree/master/examples/SdFat_format
  */
 
 #include "SPI.h"
@@ -27,13 +24,38 @@
 #include "Adafruit_SPIFlash.h"
 #include "Adafruit_TinyUSB.h"
 
-// for flashTransport definition
-#include "flash_config.h"
+// Uncomment to run example with FRAM
+// #define FRAM_CS   A5
+// #define FRAM_SPI  SPI
+
+#if defined(FRAM_CS) && defined(FRAM_SPI)
+  Adafruit_FlashTransport_SPI flashTransport(FRAM_CS, FRAM_SPI);
+
+#elif defined(ARDUINO_ARCH_ESP32)
+  // ESP32 use same flash device that store code.
+  // Therefore there is no need to specify the SPI and SS
+  Adafruit_FlashTransport_ESP32 flashTransport;
+
+#else
+  // On-board external flash (QSPI or SPI) macros should already
+  // defined in your board variant if supported
+  // - EXTERNAL_FLASH_USE_QSPI
+  // - EXTERNAL_FLASH_USE_CS/EXTERNAL_FLASH_USE_SPI
+  #if defined(EXTERNAL_FLASH_USE_QSPI)
+    Adafruit_FlashTransport_QSPI flashTransport;
+
+  #elif defined(EXTERNAL_FLASH_USE_SPI)
+    Adafruit_FlashTransport_SPI flashTransport(EXTERNAL_FLASH_USE_CS, EXTERNAL_FLASH_USE_SPI);
+
+  #else
+    #error No QSPI/SPI flash are defined on your board variant.h !
+  #endif
+#endif
 
 Adafruit_SPIFlash flash(&flashTransport);
 
 // file system object from SdFat
-FatVolume fatfs;
+FatFileSystem fatfs;
 
 FatFile root;
 FatFile file;
@@ -41,11 +63,8 @@ FatFile file;
 // USB Mass Storage object
 Adafruit_USBD_MSC usb_msc;
 
-// Check if flash is formatted
-bool fs_formatted = false;
-
 // Set to true when PC write to flash
-bool fs_changed = true;;
+bool fs_changed;
 
 // the setup function runs once when you press reset or power the board
 void setup()
@@ -65,11 +84,11 @@ void setup()
 
   // MSC is ready for read/write
   usb_msc.setUnitReady(true);
-
+  
   usb_msc.begin();
 
   // Init file system on the flash
-  fs_formatted = fatfs.begin(&flash);
+  fatfs.begin(&flash);
 
   Serial.begin(115200);
   //while ( !Serial ) delay(10);   // wait for native usb
@@ -77,33 +96,16 @@ void setup()
   Serial.println("Adafruit TinyUSB Mass Storage External Flash example");
   Serial.print("JEDEC ID: 0x"); Serial.println(flash.getJEDECID(), HEX);
   Serial.print("Flash size: "); Serial.print(flash.size() / 1024); Serial.println(" KB");
+
+  fs_changed = true; // to print contents initially
 }
 
 void loop()
 {
-  // check if formatted
-  if ( !fs_formatted )
-  {
-    fs_formatted = fatfs.begin(&flash);
-
-    if (!fs_formatted)
-    {
-      Serial.println("Failed to init files system, flash may not be formatted");
-      Serial.println("Please format it as FAT12 with your PC or using Adafruit_SPIFlash's SdFat_format example:");
-      Serial.println("- https://github.com/adafruit/Adafruit_SPIFlash/tree/master/examples/SdFat_format");
-      Serial.println();
-
-      delay(1000);
-      return;
-    }
-  }
-
   if ( fs_changed )
   {
     fs_changed = false;
-
-    Serial.println("Opening root");
-
+    
     if ( !root.open("/") )
     {
       Serial.println("open root failed");
@@ -132,7 +134,7 @@ void loop()
     root.close();
 
     Serial.println();
-    delay(1000); // refresh every 1 second
+    delay(1000); // refresh every 0.5 second
   }
 }
 
@@ -141,7 +143,7 @@ void loop()
 // return number of copied bytes (must be multiple of block size) 
 int32_t msc_read_cb (uint32_t lba, void* buffer, uint32_t bufsize)
 {
-  // Note: SPIFLash Block API: readBlocks/writeBlocks/syncBlocks
+  // Note: SPIFLash Bock API: readBlocks/writeBlocks/syncBlocks
   // already include 4K sector caching internally. We don't need to cache it, yahhhh!!
   return flash.readBlocks(lba, (uint8_t*) buffer, bufsize/512) ? bufsize : -1;
 }
@@ -153,7 +155,7 @@ int32_t msc_write_cb (uint32_t lba, uint8_t* buffer, uint32_t bufsize)
 {
   digitalWrite(LED_BUILTIN, HIGH);
 
-  // Note: SPIFLash Block API: readBlocks/writeBlocks/syncBlocks
+  // Note: SPIFLash Bock API: readBlocks/writeBlocks/syncBlocks
   // already include 4K sector caching internally. We don't need to cache it, yahhhh!!
   return flash.writeBlocks(lba, buffer, bufsize/512) ? bufsize : -1;
 }

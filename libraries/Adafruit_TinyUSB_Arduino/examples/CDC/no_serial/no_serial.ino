@@ -23,9 +23,7 @@ int led = LED_BUILTIN;
 
 void setup()
 {
-  // clear configuration will remove all USB interfaces including CDC (Serial)
-  TinyUSBDevice.clearConfiguration();
-
+  Serial.end();
   pinMode(led, OUTPUT);
 }
 

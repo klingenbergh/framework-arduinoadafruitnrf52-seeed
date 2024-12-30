@@ -24,7 +24,7 @@
 
 #include "tusb_option.h"
 
-#if defined ARDUINO_NRF52_ADAFRUIT && CFG_TUD_ENABLED
+#if defined ARDUINO_NRF52_ADAFRUIT && TUSB_OPT_DEVICE_ENABLED
 
 #include "nrfx.h"
 #include "nrfx_power.h"
@@ -68,15 +68,13 @@ static void usb_device_task(void *param) {
   // 2 is highest for application
   NVIC_SetPriority(USBD_IRQn, 2);
 
-  // init device on rhport0
-  tud_init(0);
+  tusb_init();
 
   usb_hardware_init();
 
   // RTOS forever loop
   while (1) {
     tud_task();
-    TinyUSB_Device_FlushCDC();
   }
 }
 

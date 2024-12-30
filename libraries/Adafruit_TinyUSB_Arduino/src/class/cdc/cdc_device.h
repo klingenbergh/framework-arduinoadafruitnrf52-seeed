@@ -1,4 +1,4 @@
-/*
+/* 
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Ha Thach (tinyusb.org)
@@ -27,6 +27,7 @@
 #ifndef _TUSB_CDC_DEVICE_H_
 #define _TUSB_CDC_DEVICE_H_
 
+#include "common/tusb_common.h"
 #include "cdc.h"
 
 //--------------------------------------------------------------------+
@@ -39,12 +40,6 @@
 
 #ifndef CFG_TUD_CDC_EP_BUFSIZE
   #define CFG_TUD_CDC_EP_BUFSIZE    (TUD_OPT_HIGH_SPEED ? 512 : 64)
-#endif
-
-// By default the TX fifo buffer is cleared on connect / bus reset.
-// Enable this to persist any data in the fifo instead.
-#ifndef CFG_TUD_CDC_PERSISTENT_TX_BUFF
-  #define CFG_TUD_CDC_PERSISTENT_TX_BUFF    (0)
 #endif
 
 #ifdef __cplusplus
@@ -86,7 +81,7 @@ int32_t  tud_cdc_n_read_char       (uint8_t itf);
 // Clear the received FIFO
 void     tud_cdc_n_read_flush      (uint8_t itf);
 
-// Get a byte from FIFO without removing it
+// Get a byte from FIFO at the specified position without removing it
 bool     tud_cdc_n_peek            (uint8_t itf, uint8_t* ui8);
 
 // Write bytes to TX FIFO, data may remain in the FIFO for a while
@@ -140,7 +135,7 @@ TU_ATTR_WEAK void tud_cdc_rx_cb(uint8_t itf);
 // Invoked when received `wanted_char`
 TU_ATTR_WEAK void tud_cdc_rx_wanted_cb(uint8_t itf, char wanted_char);
 
-// Invoked when a TX is complete and therefore space becomes available in TX buffer
+// Invoked when space becomes available in TX buffer
 TU_ATTR_WEAK void tud_cdc_tx_complete_cb(uint8_t itf);
 
 // Invoked when line state DTR & RTS are changed via SET_CONTROL_LINE_STATE
@@ -253,7 +248,6 @@ static inline bool tud_cdc_write_clear(void)
 // INTERNAL USBD-CLASS DRIVER API
 //--------------------------------------------------------------------+
 void     cdcd_init            (void);
-bool     cdcd_deinit          (void);
 void     cdcd_reset           (uint8_t rhport);
 uint16_t cdcd_open            (uint8_t rhport, tusb_desc_interface_t const * itf_desc, uint16_t max_len);
 bool     cdcd_control_xfer_cb (uint8_t rhport, uint8_t stage, tusb_control_request_t const * request);

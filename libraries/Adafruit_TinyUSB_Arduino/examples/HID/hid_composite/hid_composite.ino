@@ -31,10 +31,6 @@
   const int pin = PIN_BUTTON1;
   bool activeState = false;
 
-#elif defined(ARDUINO_ARCH_ESP32)
-  const int pin = 0;
-  bool activeState = false;
-
 #else
   const int pin = 12;
   bool activeState = false;
@@ -50,22 +46,24 @@ enum
 };
 
 // HID report descriptor using TinyUSB's template
-uint8_t const desc_hid_report[] = {
+uint8_t const desc_hid_report[] =
+{
   TUD_HID_REPORT_DESC_KEYBOARD( HID_REPORT_ID(RID_KEYBOARD) ),
   TUD_HID_REPORT_DESC_MOUSE   ( HID_REPORT_ID(RID_MOUSE) ),
   TUD_HID_REPORT_DESC_CONSUMER( HID_REPORT_ID(RID_CONSUMER_CONTROL) )
 };
 
-// USB HID object.
-Adafruit_USBD_HID usb_hid;
+// USB HID object. For ESP32 these values cannot be changed after this declaration
+// desc report, desc len, protocol, interval, use out endpoint
+Adafruit_USBD_HID usb_hid(desc_hid_report, sizeof(desc_hid_report), HID_ITF_PROTOCOL_NONE, 2, false);
 
 // the setup function runs once when you press reset or power the board
 void setup()
 {
-  // Set up HID
-  usb_hid.setPollInterval(2);
-  usb_hid.setReportDescriptor(desc_hid_report, sizeof(desc_hid_report));
-  usb_hid.setStringDescriptor("TinyUSB HID Composite");
+  // Notes: following commented-out functions has no affect on ESP32
+  // usb_hid.setPollInterval(2);
+  // usb_hid.setReportDescriptor();
+  // usb_hid.setStringDescriptor("TinyUSB HID Composite");
 
   usb_hid.begin();
 

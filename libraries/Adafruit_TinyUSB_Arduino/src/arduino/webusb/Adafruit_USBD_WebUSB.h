@@ -46,13 +46,10 @@ public:
   bool setLandingPage(const void *url);
   void setLineStateCallback(linestate_callback_t fp);
 
-  // Stream API
+  // Stream interface to use with MIDI Library
+  virtual int read(void);
   virtual int available(void);
   virtual int peek(void);
-
-  virtual int read(void);
-  size_t read(uint8_t *buffer, size_t size);
-
   virtual void flush(void);
   virtual size_t write(uint8_t b);
 
@@ -65,8 +62,12 @@ public:
   operator bool();
 
   // from Adafruit_USBD_Interface
-  virtual uint16_t getInterfaceDescriptor(uint8_t itfnum_deprecated,
-                                          uint8_t *buf, uint16_t bufsize);
+  virtual uint16_t getInterfaceDescriptor(uint8_t itfnum, uint8_t *buf,
+                                          uint16_t bufsize);
+
+  // internal use only
+  uint16_t makeItfDesc(uint8_t itfnum, uint8_t *buf, uint16_t bufsize,
+                       uint8_t ep_in, uint8_t ep_out);
 
 private:
   bool _connected;

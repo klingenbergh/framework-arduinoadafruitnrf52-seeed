@@ -24,18 +24,16 @@
 
 #include "tusb_option.h"
 
-#if CFG_TUD_ENABLED && CFG_TUD_VENDOR
+#if TUSB_OPT_DEVICE_ENABLED && CFG_TUD_VENDOR
 
 #include "Adafruit_USBD_WebUSB.h"
 #include "Arduino.h"
 
-#ifdef ARDUINO_ARCH_ESP32
-#include "USB.h"
-#endif
-
 //--------------------------------------------------------------------+
 // MACRO TYPEDEF CONSTANT ENUM DECLARATION
 //--------------------------------------------------------------------+
+#define EPOUT 0x00
+#define EPIN 0x80
 #define EPSIZE 64
 
 enum { VENDOR_REQUEST_WEBUSB = 1, VENDOR_REQUEST_MICROSOFT = 2 };
@@ -122,10 +120,42 @@ TU_VERIFY_STATIC(sizeof(desc_ms_os_20) == MS_OS_20_DESC_LEN, "Incorrect size");
 //--------------------------------------------------------------------+
 // IMPLEMENTATION
 //--------------------------------------------------------------------+
+
+#ifdef ARDUINO_ARCH_ESP32
+static uint16_t webusb_load_descriptor(uint8_t *dst, uint8_t *itf) {
+  // uint8_t str_index = tinyusb_add_string_descriptor("TinyUSB MSC");
+  uint8_t str_index = 0;
+
+  uint8_t ep_in = tinyusb_get_free_in_endpoint();
+  uint8_t ep_out = tinyusb_get_free_out_endpoint();
+  TU_VERIFY(ep_in && ep_out);
+  ep_in |= 0x80;
+
+  uint16_t desc_len = _webusb_dev->getInterfaceDescriptor(0, NULL, 0);
+
+  desc_len = _webusb_dev->makeItfDesc(*itf, dst, desc_len, ep_in, ep_out);
+
+  *itf += 1;
+  return desc_len;
+}
+#endif
+
 Adafruit_USBD_WebUSB::Adafruit_USBD_WebUSB(const void *url) {
   _connected = false;
   _url = (const uint8_t *)url;
   _linestate_cb = NULL;
+
+#ifdef ARDUINO_ARCH_ESP32
+  // ESP32 requires setup configuration descriptor within constructor
+
+  // WebUSB requires USB version at least 2.1 (or 3.x)
+  USB.usbVersion(0x0210);
+
+  _webusb_dev = this;
+  uint16_t const desc_len = getInterfaceDescriptor(0, NULL, 0);
+  tinyusb_enable_interface(USB_INTERFACE_VENDOR, desc_len,
+                           webusb_load_descriptor);
+#endif
 }
 
 bool Adafruit_USBD_WebUSB::begin(void) {
@@ -149,35 +179,33 @@ void Adafruit_USBD_WebUSB::setLineStateCallback(linestate_callback_t fp) {
   _linestate_cb = fp;
 }
 
-uint16_t Adafruit_USBD_WebUSB::getInterfaceDescriptor(uint8_t itfnum_deprecated,
-                                                      uint8_t *buf,
-                                                      uint16_t bufsize) {
-  (void)itfnum_deprecated;
-
-  if (!buf) {
-    return TUD_VENDOR_DESC_LEN;
-  }
-
-  uint8_t const itfnum = TinyUSBDevice.allocInterface(1);
-  uint8_t const ep_in = TinyUSBDevice.allocEndpoint(TUSB_DIR_IN);
-  uint8_t const ep_out = TinyUSBDevice.allocEndpoint(TUSB_DIR_OUT);
-
-  uint8_t desc[] = {
-      TUD_VENDOR_DESCRIPTOR(itfnum, _strid, ep_out, ep_in, EPSIZE)};
+uint16_t Adafruit_USBD_WebUSB::makeItfDesc(uint8_t itfnum, uint8_t *buf,
+                                           uint16_t bufsize, uint8_t ep_in,
+                                           uint8_t ep_out) {
+  uint8_t desc[] = {TUD_VENDOR_DESCRIPTOR(itfnum, 0, ep_out, ep_in, EPSIZE)};
   uint16_t const len = sizeof(desc);
 
   // null buffer for length only
-  if (bufsize < len) {
-    return 0;
+  if (buf) {
+    if (bufsize < len) {
+      return 0;
+    }
+
+    memcpy(buf, desc, len);
+
+    // update the bFirstInterface in MS OS 2.0 descriptor
+    // that is binded to WinUSB driver
+    desc_ms_os_20[0x0a + 0x08 + 4] = itfnum;
   }
 
-  memcpy(buf, desc, len);
-
-  // update the bFirstInterface in MS OS 2.0 descriptor
-  // that is bound to WinUSB driver
-  desc_ms_os_20[0x0a + 0x08 + 4] = itfnum;
-
   return len;
+}
+
+uint16_t Adafruit_USBD_WebUSB::getInterfaceDescriptor(uint8_t itfnum,
+                                                      uint8_t *buf,
+                                                      uint16_t bufsize) {
+  // usb core will automatically update endpoint number
+  return makeItfDesc(itfnum, buf, bufsize, EPIN, EPOUT);
 }
 
 bool Adafruit_USBD_WebUSB::connected(void) {
@@ -211,10 +239,6 @@ int Adafruit_USBD_WebUSB::read(void) {
   return tud_vendor_read(&ch, 1) ? (int)ch : -1;
 }
 
-size_t Adafruit_USBD_WebUSB::read(uint8_t *buffer, size_t size) {
-  return tud_vendor_read(buffer, size);
-}
-
 size_t Adafruit_USBD_WebUSB::write(uint8_t b) { return this->write(&b, 1); }
 
 size_t Adafruit_USBD_WebUSB::write(const uint8_t *buffer, size_t size) {
@@ -238,7 +262,7 @@ int Adafruit_USBD_WebUSB::peek(void) {
   return tud_vendor_peek(&ch) ? (int)ch : -1;
 }
 
-void Adafruit_USBD_WebUSB::flush(void) { tud_vendor_flush(); }
+void Adafruit_USBD_WebUSB::flush(void) {}
 
 //--------------------------------------------------------------------+
 // TinyUSB stack callbacks
@@ -318,4 +342,4 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage,
 }
 }
 
-#endif // CFG_TUD_ENABLED
+#endif // TUSB_OPT_DEVICE_ENABLED

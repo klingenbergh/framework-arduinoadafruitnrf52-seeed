@@ -30,21 +30,18 @@
 
 class Adafruit_USBD_Interface {
 protected:
-  uint8_t _strid;
+  const char *_desc_str;
 
 public:
-  Adafruit_USBD_Interface(void) { _strid = 0; }
+  Adafruit_USBD_Interface(void) { _desc_str = NULL; }
 
   // Get Interface Descriptor
   // Fill the descriptor (if buf is not NULL) and return its length
-  virtual uint16_t getInterfaceDescriptor(uint8_t itfnum_deprecated,
-                                          uint8_t *buf, uint16_t bufsize) = 0;
-  // Get Interface Descriptor Length
-  uint16_t getInterfaceDescriptorLen() {
-    return getInterfaceDescriptor(0, NULL, 0);
-  }
+  virtual uint16_t getInterfaceDescriptor(uint8_t itfnum, uint8_t *buf,
+                                          uint16_t bufsize) = 0;
 
-  void setStringDescriptor(const char *str);
+  void setStringDescriptor(const char *str) { _desc_str = str; }
+  const char *getStringDescriptor(void) { return _desc_str; }
 };
 
 #endif

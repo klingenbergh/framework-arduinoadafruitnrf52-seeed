@@ -22,12 +22,14 @@
 
 // HID report descriptor using TinyUSB's template
 // Single Report (no ID) descriptor
-uint8_t const desc_hid_report[] = {
+uint8_t const desc_hid_report[] =
+{
   TUD_HID_REPORT_DESC_GAMEPAD()
 };
 
-// USB HID object
-Adafruit_USBD_HID usb_hid;
+// USB HID object. For ESP32 these values cannot be changed after this declaration
+// desc report, desc len, protocol, interval, use out endpoint
+Adafruit_USBD_HID usb_hid(desc_hid_report, sizeof(desc_hid_report), HID_ITF_PROTOCOL_NONE, 2, false);
 
 // Report payload defined in src/class/hid/hid.h
 // - For Gamepad Button Bit Mask see  hid_gamepad_button_bm_t
@@ -43,9 +45,9 @@ void setup()
 
   Serial.begin(115200);
   
-  // Setup HID
-  usb_hid.setPollInterval(2);
-  usb_hid.setReportDescriptor(desc_hid_report, sizeof(desc_hid_report));
+  // Notes: following commented-out functions has no affect on ESP32
+  // usb_hid.setPollInterval(2);
+  // usb_hid.setReportDescriptor(desc_hid_report, sizeof(desc_hid_report));
 
   usb_hid.begin();
 

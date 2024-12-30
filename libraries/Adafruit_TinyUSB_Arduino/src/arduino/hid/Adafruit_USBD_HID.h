@@ -37,9 +37,6 @@ public:
                                         uint8_t const *buffer,
                                         uint16_t bufsize);
 
-  enum { INVALID_INSTANCE = 0xffu };
-  static uint8_t getInstanceCount(void) { return _instance_count; }
-
   Adafruit_USBD_HID(void);
   Adafruit_USBD_HID(uint8_t const *desc_report, uint16_t len,
                     uint8_t protocol = HID_ITF_PROTOCOL_NONE,
@@ -56,12 +53,9 @@ public:
                          set_report_callback_t set_report);
 
   bool begin(void);
-  bool isValid(void) { return _instance != INVALID_INSTANCE; }
 
   bool ready(void);
   bool sendReport(uint8_t report_id, void const *report, uint8_t len);
-
-  uint8_t getProtocol();
 
   // Report helpers
   bool sendReport8(uint8_t report_id, uint8_t num);
@@ -82,17 +76,14 @@ public:
   bool mouseButtonRelease(uint8_t report_id);
 
   // from Adafruit_USBD_Interface
-  virtual uint16_t getInterfaceDescriptor(uint8_t itfnum_deprecated,
-                                          uint8_t *buf, uint16_t bufsize);
+  virtual uint16_t getInterfaceDescriptor(uint8_t itfnum, uint8_t *buf,
+                                          uint16_t bufsize);
 
   // internal use only
   uint16_t makeItfDesc(uint8_t itfnum, uint8_t *buf, uint16_t bufsize,
                        uint8_t ep_in, uint8_t ep_out);
 
 private:
-  static uint8_t _instance_count;
-
-  uint8_t _instance;
   uint8_t _interval_ms;
   uint8_t _protocol;
   bool _out_endpoint;

@@ -26,7 +26,7 @@
 
 #include "tusb_option.h"
 
-#if CFG_TUD_ENABLED && \
+#if TUSB_OPT_DEVICE_ENABLED && \
     (CFG_TUSB_MCU == OPT_MCU_SAMD11 || CFG_TUSB_MCU == OPT_MCU_SAMD21 || \
      CFG_TUSB_MCU == OPT_MCU_SAMD51 || CFG_TUSB_MCU == OPT_MCU_SAME5X || \
      CFG_TUSB_MCU == OPT_MCU_SAML22 || CFG_TUSB_MCU == OPT_MCU_SAML21)
@@ -180,17 +180,6 @@ void dcd_connect(uint8_t rhport)
    USB->DEVICE.CTRLB.reg &= ~USB_DEVICE_CTRLB_DETACH;
 }
 
-void dcd_sof_enable(uint8_t rhport, bool en)
-{
-  (void) rhport;
-
-  if (en) {
-    USB->DEVICE.INTENSET.bit.SOF = 1;
-  } else {
-    USB->DEVICE.INTENCLR.bit.SOF = 1;
-  }
-}
-
 /*------------------------------------------------------------------*/
 /* DCD Endpoint port
  *------------------------------------------------------------------*/
@@ -225,14 +214,14 @@ bool dcd_edpt_open (uint8_t rhport, tusb_desc_endpoint_t const * desc_edpt)
   UsbDeviceDescBank* bank = &sram_registers[epnum][dir];
   uint32_t size_value = 0;
   while (size_value < 7) {
-    if (1 << (size_value + 3) >= tu_edpt_packet_size(desc_edpt)) {
+    if (1 << (size_value + 3) == tu_edpt_packet_size(desc_edpt)) {
       break;
     }
     size_value++;
   }
 
   // unsupported endpoint size
-  if ( size_value == 7 && tu_edpt_packet_size(desc_edpt) > 1023 ) return false;
+  if ( size_value == 7 && tu_edpt_packet_size(desc_edpt) != 1023 ) return false;
 
   bank->PCKSIZE.bit.SIZE = size_value;
 
@@ -251,13 +240,6 @@ bool dcd_edpt_open (uint8_t rhport, tusb_desc_endpoint_t const * desc_edpt)
   }
 
   return true;
-}
-
-void dcd_edpt_close (uint8_t rhport, uint8_t ep_addr) {
-  (void) rhport;
-  (void) ep_addr;
-
-  // TODO: implement if necessary?
 }
 
 void dcd_edpt_close_all (uint8_t rhport)
@@ -289,14 +271,14 @@ bool dcd_edpt_xfer (uint8_t rhport, uint8_t ep_addr, uint8_t * buffer, uint16_t 
   {
     bank->PCKSIZE.bit.MULTI_PACKET_SIZE = total_bytes;
     bank->PCKSIZE.bit.BYTE_COUNT = 0;
-    ep->EPSTATUSCLR.reg = USB_DEVICE_EPSTATUSCLR_BK0RDY;
-    ep->EPINTFLAG.reg = USB_DEVICE_EPINTFLAG_TRFAIL0;
+    ep->EPSTATUSCLR.reg |= USB_DEVICE_EPSTATUSCLR_BK0RDY;
+    ep->EPINTFLAG.reg |= USB_DEVICE_EPINTFLAG_TRFAIL0;
   } else
   {
     bank->PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
     bank->PCKSIZE.bit.BYTE_COUNT = total_bytes;
-    ep->EPSTATUSSET.reg = USB_DEVICE_EPSTATUSSET_BK1RDY;
-    ep->EPINTFLAG.reg = USB_DEVICE_EPINTFLAG_TRFAIL1;
+    ep->EPSTATUSSET.reg |= USB_DEVICE_EPSTATUSSET_BK1RDY;
+    ep->EPINTFLAG.reg |= USB_DEVICE_EPINTFLAG_TRFAIL1;
   }
 
   return true;
@@ -377,9 +359,7 @@ void dcd_int_handler (uint8_t rhport)
   if ( int_status & USB_DEVICE_INTFLAG_SOF )
   {
     USB->DEVICE.INTFLAG.reg = USB_DEVICE_INTFLAG_SOF;
-    const uint32_t frame = USB->DEVICE.FNUM.bit.FNUM;
-    dcd_event_sof(0, frame, true);
-    //dcd_event_bus_signal(0, DCD_EVENT_SOF, true);
+    dcd_event_bus_signal(0, DCD_EVENT_SOF, true);
   }
 
   // SAMD doesn't distinguish between Suspend and Disconnect state.

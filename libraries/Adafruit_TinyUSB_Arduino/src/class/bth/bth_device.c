@@ -26,17 +26,11 @@
 
 #include "tusb_option.h"
 
-#if (CFG_TUD_ENABLED && CFG_TUD_BTH)
+#if (TUSB_OPT_DEVICE_ENABLED && CFG_TUD_BTH)
 
 //--------------------------------------------------------------------+
 // INCLUDE
 //--------------------------------------------------------------------+
-
-// ESP32 out-of-sync
-#ifdef ARDUINO_ARCH_ESP32
-#include "arduino/ports/esp32/tusb_config_esp32.h"
-#endif
-
 #include "bth_device.h"
 #include <device/usbd_pvt.h>
 
@@ -61,16 +55,14 @@ typedef struct
 //--------------------------------------------------------------------+
 // INTERNAL OBJECT & FUNCTION DECLARATION
 //--------------------------------------------------------------------+
-CFG_TUD_MEM_SECTION btd_interface_t _btd_itf;
+CFG_TUSB_MEM_SECTION btd_interface_t _btd_itf;
 
 static bool bt_tx_data(uint8_t ep, void *data, uint16_t len)
 {
-  uint8_t const rhport = 0;
-
   // skip if previous transfer not complete
-  TU_VERIFY(!usbd_edpt_busy(rhport, ep));
+  TU_VERIFY(!usbd_edpt_busy(TUD_OPT_RHPORT, ep));
 
-  TU_ASSERT(usbd_edpt_xfer(rhport, ep, data, len));
+  TU_ASSERT(usbd_edpt_xfer(TUD_OPT_RHPORT, ep, data, len));
 
   return true;
 }
@@ -97,12 +89,9 @@ bool tud_bt_acl_data_send(void *event, uint16_t event_len)
 //--------------------------------------------------------------------+
 // USBD Driver API
 //--------------------------------------------------------------------+
-void btd_init(void) {
+void btd_init(void)
+{
   tu_memclr(&_btd_itf, sizeof(_btd_itf));
-}
-
-bool btd_deinit(void) {
-  return true;
 }
 
 void btd_reset(uint8_t rhport)
@@ -213,9 +202,7 @@ bool btd_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t c
         request->bmRequestType_bit.recipient == TUSB_REQ_RCPT_DEVICE)
     {
       // HCI command packet addressing for single function Primary Controllers
-      // also compatible with historical mode if enabled
-      TU_VERIFY((request->bRequest == 0 && request->wValue == 0 && request->wIndex == 0) ||
-                (CFG_TUD_BTH_HISTORICAL_COMPATIBLE && request->bRequest == 0xe0));
+      TU_VERIFY(request->bRequest == 0 && request->wValue == 0 && request->wIndex == 0);
     }
     else if (request->bmRequestType_bit.recipient == TUSB_REQ_RCPT_INTERFACE)
     {

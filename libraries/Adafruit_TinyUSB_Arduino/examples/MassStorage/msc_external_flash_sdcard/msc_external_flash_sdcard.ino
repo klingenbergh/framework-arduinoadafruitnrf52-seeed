@@ -17,9 +17,6 @@
  * Note: Adafruit fork of SdFat enabled ENABLE_EXTENDED_TRANSFER_CLASS and FAT12_SUPPORT
  * in SdFatConfig.h, which is needed to run SdFat on external flash. You can use original
  * SdFat library and manually change those macros
- *
- * Note2: If your flash is not formatted as FAT12 previously, you could format it using
- * follow sketch https://github.com/adafruit/Adafruit_SPIFlash/tree/master/examples/SdFat_format
  */
 
 #include "SPI.h"
@@ -27,32 +24,43 @@
 #include "Adafruit_SPIFlash.h"
 #include "Adafruit_TinyUSB.h"
 
-//--------------------------------------------------------------------+
-// External Flash Config
-//--------------------------------------------------------------------+
+// Uncomment to run example with FRAM
+// #define FRAM_CS   A5
+// #define FRAM_SPI  SPI
 
-// for flashTransport definition
-#include "flash_config.h"
+#if defined(FRAM_CS) && defined(FRAM_SPI)
+  Adafruit_FlashTransport_SPI flashTransport(FRAM_CS, FRAM_SPI);
+
+#elif defined(ARDUINO_ARCH_ESP32)
+  // ESP32 use same flash device that store code.
+  // Therefore there is no need to specify the SPI and SS
+  Adafruit_FlashTransport_ESP32 flashTransport;
+
+#else
+  // On-board external flash (QSPI or SPI) macros should already
+  // defined in your board variant if supported
+  // - EXTERNAL_FLASH_USE_QSPI
+  // - EXTERNAL_FLASH_USE_CS/EXTERNAL_FLASH_USE_SPI
+  #if defined(EXTERNAL_FLASH_USE_QSPI)
+    Adafruit_FlashTransport_QSPI flashTransport;
+
+  #elif defined(EXTERNAL_FLASH_USE_SPI)
+    Adafruit_FlashTransport_SPI flashTransport(EXTERNAL_FLASH_USE_CS, EXTERNAL_FLASH_USE_SPI);
+
+  #else
+    #error No QSPI/SPI flash are defined on your board variant.h !
+  #endif
+#endif
+
 
 Adafruit_SPIFlash flash(&flashTransport);
 
-// External Flash File system
-FatVolume fatfs;
+// File system object on external flash from SdFat
+FatFileSystem fatfs;
 
-//--------------------------------------------------------------------+
-// SDCard Config
-//--------------------------------------------------------------------+
+const int chipSelect = 10;
 
-#if defined(ARDUINO_PYPORTAL_M4) || defined(ARDUINO_PYPORTAL_M4_TITANO)
-  // PyPortal has on-board card reader
-  #define SDCARD_CS       32
-  #define SDCARD_DETECT   33
-#else
-  #define SDCARD_CS       10
-  // no detect
-#endif
-
-// SDCard File system
+// File system on SD Card
 SdFat sd;
 
 // USB Mass Storage object
@@ -60,18 +68,14 @@ Adafruit_USBD_MSC usb_msc;
 
 // Set to true when PC write to flash
 bool sd_changed = false;
-bool sd_inited = false;
-
-bool flash_formatted = false;
 bool flash_changed = false;
 
 // the setup function runs once when you press reset or power the board
 void setup()
 {
   pinMode(LED_BUILTIN, OUTPUT);
-  Serial.begin(115200);
 
-  // MSC with 2 Logical Units: LUN0: External Flash, LUN1: SDCard
+  // MSC with 2 Logical Units
   usb_msc.setMaxLun(2);
 
   usb_msc.setID(0, "Adafruit", "External Flash", "1.0");
@@ -85,7 +89,7 @@ void setup()
 
   //------------- Lun 0 for external flash -------------//
   flash.begin();
-  flash_formatted = fatfs.begin(&flash);
+  fatfs.begin(&flash);
 
   usb_msc.setCapacity(0, flash.size()/512, 512);
   usb_msc.setReadWriteCallback(0, external_flash_read_cb, external_flash_write_cb, external_flash_flush_cb);
@@ -94,58 +98,26 @@ void setup()
   flash_changed = true; // to print contents initially
 
   //------------- Lun 1 for SD card -------------//
-#ifdef SDCARD_DETECT
-  // DETECT pin is available, detect card present on the fly with test unit ready
-  pinMode(SDCARD_DETECT, INPUT);
-  usb_msc.setReadyCallback(1, sdcard_ready_callback);
-#else
-  // no DETECT pin, card must be inserted when powered on
-  init_sdcard();
-  sd_inited = true;
-  usb_msc.setUnitReady(1, true);
-#endif
+  if ( sd.begin(chipSelect, SD_SCK_MHZ(50)) )
+  {
+    uint32_t block_count = sd.card()->cardSize();
+    usb_msc.setCapacity(1, block_count, 512);
+    usb_msc.setReadWriteCallback(1, sdcard_read_cb, sdcard_write_cb, sdcard_flush_cb);
+    usb_msc.setUnitReady(1, true);
 
-//  while ( !Serial ) delay(10);   // wait for native usb
+    sd_changed = true; // to print contents initially
+  }
+
+  Serial.begin(115200);
+  //while ( !Serial ) delay(10);   // wait for native usb
+
   Serial.println("Adafruit TinyUSB Mass Storage External Flash + SD Card example");
   delay(1000);
 }
 
-bool init_sdcard(void)
+void print_rootdir(File* rdir)
 {
-  Serial.print("Init SDCard ... ");
-
-  if ( !sd.begin(SDCARD_CS, SD_SCK_MHZ(50)) )
-  {
-    Serial.print("Failed ");
-    sd.errorPrint("sd.begin() failed");
-
-    return false;
-  }
-
-  uint32_t block_count;
-
-#if SD_FAT_VERSION >= 20000
-  block_count = sd.card()->sectorCount();
-#else
-  block_count = sd.card()->cardSize();
-#endif
-
-
-  usb_msc.setCapacity(1, block_count, 512);
-  usb_msc.setReadWriteCallback(1, sdcard_read_cb, sdcard_write_cb, sdcard_flush_cb);
-
-  sd_changed = true; // to print contents initially
-
-  Serial.print("OK, Card size = ");
-  Serial.print((block_count / (1024*1024)) * 512);
-  Serial.println(" MB");
-
-  return true;
-}
-
-void print_rootdir(File32* rdir)
-{
-  File32 file;
+  File file;
 
   // Open next file in root.
   // Warning, openNext starts at the current directory position
@@ -169,30 +141,21 @@ void loop()
 {
   if ( flash_changed )
   {
-    if (!flash_formatted)
-    {
-      flash_formatted = fatfs.begin(&flash);
-    }
+    File root;
+    root = fatfs.open("/");
 
-    // skip if still not formatted
-    if (flash_formatted)
-    {
-      File32 root;
-      root = fatfs.open("/");
+    Serial.println("Flash contents:");
+    print_rootdir(&root);
+    Serial.println();
 
-      Serial.println("Flash contents:");
-      print_rootdir(&root);
-      Serial.println();
-
-      root.close();
-    }
+    root.close();
 
     flash_changed = false;
   }
 
   if ( sd_changed )
   {
-    File32 root;
+    File root;
     root = sd.open("/");
 
     Serial.println("SD contents:");
@@ -214,15 +177,7 @@ void loop()
 
 int32_t sdcard_read_cb (uint32_t lba, void* buffer, uint32_t bufsize)
 {
-  bool rc;
-
-#if SD_FAT_VERSION >= 20000
-  rc = sd.card()->readSectors(lba, (uint8_t*) buffer, bufsize/512);
-#else
-  rc = sd.card()->readBlocks(lba, (uint8_t*) buffer, bufsize/512);
-#endif
-
-  return rc ? bufsize : -1;
+  return sd.card()->readBlocks(lba, (uint8_t*) buffer, bufsize/512) ? bufsize : -1;
 }
 
 // Callback invoked when received WRITE10 command.
@@ -230,28 +185,16 @@ int32_t sdcard_read_cb (uint32_t lba, void* buffer, uint32_t bufsize)
 // return number of written bytes (must be multiple of block size)
 int32_t sdcard_write_cb (uint32_t lba, uint8_t* buffer, uint32_t bufsize)
 {
-  bool rc;
-
   digitalWrite(LED_BUILTIN, HIGH);
 
-#if SD_FAT_VERSION >= 20000
-  rc = sd.card()->writeSectors(lba, buffer, bufsize/512);
-#else
-  rc = sd.card()->writeBlocks(lba, buffer, bufsize/512);
-#endif
-
-  return rc ? bufsize : -1;
+  return sd.card()->writeBlocks(lba, buffer, bufsize/512) ? bufsize : -1;
 }
 
 // Callback invoked when WRITE10 command is completed (status received and accepted by host).
 // used to flush any pending cache.
 void sdcard_flush_cb (void)
 {
-#if SD_FAT_VERSION >= 20000
-  sd.card()->syncDevice();
-#else
   sd.card()->syncBlocks();
-#endif
 
   // clear file system's cache to force refresh
   sd.cacheClear();
@@ -260,31 +203,6 @@ void sdcard_flush_cb (void)
 
   digitalWrite(LED_BUILTIN, LOW);
 }
-
-#ifdef SDCARD_DETECT
-// Invoked when received Test Unit Ready command.
-// return true allowing host to read/write this LUN e.g SD card inserted
-bool sdcard_ready_callback(void)
-{
-  // Card is inserted
-  if ( digitalRead(SDCARD_DETECT) == HIGH )
-  {
-    // init SD card if not already
-    if ( !sd_inited )
-    {
-      sd_inited = init_sdcard();
-    }
-  }else
-  {
-    sd_inited = false;
-    usb_msc.setReadWriteCallback(1, NULL, NULL, NULL);
-  }
-
-  Serial.println(sd_inited);
-
-  return sd_inited;
-}
-#endif
 
 //--------------------------------------------------------------------+
 // External Flash callbacks

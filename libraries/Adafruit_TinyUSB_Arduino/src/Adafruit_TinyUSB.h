@@ -26,66 +26,26 @@
 #define ADAFRUIT_TINYUSB_H_
 
 // Error message for Core that must select TinyUSB via menu
-#if !defined(USE_TINYUSB) &&                                                   \
-    (defined(ARDUINO_ARCH_SAMD) ||                                             \
-     (defined(ARDUINO_ARCH_RP2040) && !defined(ARDUINO_ARCH_MBED)))
+#if !defined(USE_TINYUSB) && ( defined(ARDUINO_ARCH_SAMD) || \
+                               (defined(ARDUINO_ARCH_RP2040) && !defined(ARDUINO_ARCH_MBED)) )
 #error TinyUSB is not selected, please select it in "Tools->Menu->USB Stack"
-#endif
-
-// ESP32 out-of-sync
-#ifdef ARDUINO_ARCH_ESP32
-#include "arduino/ports/esp32/tusb_config_esp32.h"
 #endif
 
 #include "tusb_option.h"
 
-// Device
-#if CFG_TUD_ENABLED
+#if TUSB_OPT_DEVICE_ENABLED
 
 #include "arduino/Adafruit_USBD_Device.h"
-
-#if CFG_TUD_CDC
 #include "arduino/Adafruit_USBD_CDC.h"
-#endif
 
-#if CFG_TUD_HID
 #include "arduino/hid/Adafruit_USBD_HID.h"
-#endif
-
-#if CFG_TUD_MIDI
 #include "arduino/midi/Adafruit_USBD_MIDI.h"
-#endif
-
-#if CFG_TUD_MSC
 #include "arduino/msc/Adafruit_USBD_MSC.h"
-#endif
-
-#if CFG_TUD_VENDOR
 #include "arduino/webusb/Adafruit_USBD_WebUSB.h"
-#endif
-
-#if CFG_TUD_VIDEO
-#include "arduino/video/Adafruit_USBD_Video.h"
-#endif
 
 // Initialize device hardware, stack, also Serial as CDC
 // Wrapper for TinyUSBDevice.begin(rhport)
 void TinyUSB_Device_Init(uint8_t rhport);
-
-#endif
-
-// Host
-#if CFG_TUH_ENABLED
-
-#include "arduino/Adafruit_USBH_Host.h"
-
-#if CFG_TUH_CDC
-#include "arduino/cdc/Adafruit_USBH_CDC.h"
-#endif
-
-#if CFG_TUH_MSC
-#include "arduino/msc/Adafruit_USBH_MSC.h"
-#endif
 
 #endif
 

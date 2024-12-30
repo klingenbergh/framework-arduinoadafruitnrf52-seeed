@@ -23,28 +23,17 @@
 // MSC External Flash Config
 //--------------------------------------------------------------------+
 
-// Un-comment to run example with custom SPI SPI and SS e.g with FRAM breakout
-// #define CUSTOM_CS   A5
-// #define CUSTOM_SPI  SPI
+// Uncomment to run example with FRAM
+// #define FRAM_CS   A5
+// #define FRAM_SPI  SPI
 
-#if defined(CUSTOM_CS) && defined(CUSTOM_SPI)
-  Adafruit_FlashTransport_SPI flashTransport(CUSTOM_CS, CUSTOM_SPI);
+#if defined(FRAM_CS) && defined(FRAM_SPI)
+  Adafruit_FlashTransport_SPI flashTransport(FRAM_CS, FRAM_SPI);
 
 #elif defined(ARDUINO_ARCH_ESP32)
   // ESP32 use same flash device that store code.
   // Therefore there is no need to specify the SPI and SS
   Adafruit_FlashTransport_ESP32 flashTransport;
-
-#elif defined(ARDUINO_ARCH_RP2040)
-  // RP2040 use same flash device that store code.
-  // Therefore there is no need to specify the SPI and SS
-  // Use default (no-args) constructor to be compatible with CircuitPython partition scheme
-  Adafruit_FlashTransport_RP2040 flashTransport;
-
-  // For generic usage:
-  //    Adafruit_FlashTransport_RP2040 flashTransport(start_address, size)
-  // If start_address and size are both 0, value that match filesystem setting in
-  // 'Tools->Flash Size' menu selection will be used
 
 #else
   // On-board external flash (QSPI or SPI) macros should already
@@ -72,12 +61,14 @@ Adafruit_USBD_MSC usb_msc;
 
 // HID report descriptor using TinyUSB's template
 // Single Report (no ID) descriptor
-uint8_t const desc_hid_report[] = {
-    TUD_HID_REPORT_DESC_MOUSE()
+uint8_t const desc_hid_report[] =
+{
+  TUD_HID_REPORT_DESC_MOUSE()
 };
 
-// USB HID object
-Adafruit_USBD_HID usb_hid;
+// USB HID object. For ESP32 these values cannot be changed after this declaration
+// desc report, desc len, protocol, interval, use out endpoint
+Adafruit_USBD_HID usb_hid(desc_hid_report, sizeof(desc_hid_report), HID_ITF_PROTOCOL_NONE, 2, false);
 
 #if defined(ARDUINO_SAMD_CIRCUITPLAYGROUND_EXPRESS) || defined(ARDUINO_NRF52840_CIRCUITPLAY)
   const int pin = 4; // Left Button
@@ -91,10 +82,6 @@ Adafruit_USBD_HID usb_hid;
   const int pin = PIN_BUTTON1;
   bool activeState = false;
 
-#elif defined(ARDUINO_ARCH_ESP32)
-  const int pin = 0;
-  bool activeState = false;
-
 #else
   const int pin = 12;
   bool activeState = false;
@@ -104,11 +91,6 @@ Adafruit_USBD_HID usb_hid;
 // the setup function runs once when you press reset or power the board
 void setup()
 {
-#if defined(ARDUINO_ARCH_MBED) && defined(ARDUINO_ARCH_RP2040)
-  // Manual begin() is required on core without built-in support for TinyUSB such as mbed rp2040
-  TinyUSB_Device_Init(0);
-#endif
-
   flash.begin();
 
   pinMode(LED_BUILTIN, OUTPUT);
@@ -130,10 +112,9 @@ void setup()
   // Set up button
   pinMode(pin, activeState ? INPUT_PULLDOWN : INPUT_PULLUP);
 
-  // Set up HID
-  usb_hid.setReportDescriptor(desc_hid_report, sizeof(desc_hid_report));
-  usb_hid.setBootProtocol(HID_ITF_PROTOCOL_NONE);
-  usb_hid.setPollInterval(2);
+  // Notes: following commented-out functions has no affect on ESP32
+  // usb_hid.setReportDescriptor(desc_hid_report, sizeof(desc_hid_report));
+
   usb_hid.begin();
 
   Serial.begin(115200);

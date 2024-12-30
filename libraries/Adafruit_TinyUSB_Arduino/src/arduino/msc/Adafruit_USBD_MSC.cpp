@@ -24,42 +24,58 @@
 
 #include "tusb_option.h"
 
-#if CFG_TUD_ENABLED && CFG_TUD_MSC
+#if TUSB_OPT_DEVICE_ENABLED && CFG_TUD_MSC
 
 #include "Adafruit_USBD_MSC.h"
 
+#define EPOUT 0x00
+#define EPIN 0x80
 #define EPSIZE 64 // TODO must be 512 for highspeed device
 
 static Adafruit_USBD_MSC *_msc_dev = NULL;
 
+#ifdef ARDUINO_ARCH_ESP32
+static uint16_t msc_load_descriptor(uint8_t *dst, uint8_t *itf) {
+  // uint8_t str_index = tinyusb_add_string_descriptor("TinyUSB MSC");
+  uint8_t str_index = 0;
+
+  uint8_t ep_in = tinyusb_get_free_in_endpoint();
+  uint8_t ep_out = tinyusb_get_free_out_endpoint();
+  TU_VERIFY(ep_in && ep_out);
+  ep_in |= 0x80;
+
+  uint8_t const descriptor[TUD_MSC_DESC_LEN] = {
+      // Interface number, string index, EP Out & EP In address, EP size
+      TUD_MSC_DESCRIPTOR(*itf, str_index, ep_out, ep_in, EPSIZE)};
+
+  *itf += 1;
+  memcpy(dst, descriptor, TUD_MSC_DESC_LEN);
+  return TUD_MSC_DESC_LEN;
+}
+#endif
+
 Adafruit_USBD_MSC::Adafruit_USBD_MSC(void) {
   _maxlun = 1;
   memset(_lun_info, 0, sizeof(_lun_info));
+
+#ifdef ARDUINO_ARCH_ESP32
+  // ESP32 requires setup configuration descriptor on declaration
+  tinyusb_enable_interface(USB_INTERFACE_MSC, TUD_MSC_DESC_LEN,
+                           msc_load_descriptor);
+#endif
 }
 
-uint16_t Adafruit_USBD_MSC::getInterfaceDescriptor(uint8_t itfnum_deprecated,
-                                                   uint8_t *buf,
+uint16_t Adafruit_USBD_MSC::getInterfaceDescriptor(uint8_t itfnum, uint8_t *buf,
                                                    uint16_t bufsize) {
-  (void)itfnum_deprecated;
-
-  // null buffer is used to get the length of descriptor only
-  if (!buf) {
-    return TUD_MSC_DESC_LEN;
-  }
-
-  uint8_t const itfnum = TinyUSBDevice.allocInterface(1);
-  uint8_t const ep_in = TinyUSBDevice.allocEndpoint(TUSB_DIR_IN);
-  uint8_t const ep_out = TinyUSBDevice.allocEndpoint(TUSB_DIR_OUT);
-
-  uint8_t const desc[] = {
-      TUD_MSC_DESCRIPTOR(itfnum, _strid, ep_out, ep_in, EPSIZE)};
+  // usb core will automatically update endpoint number
+  uint8_t const desc[] = {TUD_MSC_DESCRIPTOR(itfnum, 0, EPOUT, EPIN, EPSIZE)};
   uint16_t const len = sizeof(desc);
 
   if (bufsize < len) {
     return 0;
   }
-  memcpy(buf, desc, len);
 
+  memcpy(buf, desc, len);
   return len;
 }
 
@@ -92,18 +108,8 @@ void Adafruit_USBD_MSC::setReadWriteCallback(uint8_t lun, read_callback_t rd_cb,
   _lun_info[lun].fl_cb = fl_cb;
 }
 
-void Adafruit_USBD_MSC::setStartStopCallback(uint8_t lun,
-                                             start_stop_callback_t cb) {
-  _lun_info[lun].start_stop_cb = cb;
-}
-
 void Adafruit_USBD_MSC::setReadyCallback(uint8_t lun, ready_callback_t cb) {
   _lun_info[lun].ready_cb = cb;
-}
-
-void Adafruit_USBD_MSC::setWritableCallback(uint8_t lun,
-                                            writable_callback_t cb) {
-  _lun_info[lun].writable_cb = cb;
 }
 
 bool Adafruit_USBD_MSC::begin(void) {
@@ -162,14 +168,7 @@ bool tud_msc_test_unit_ready_cb(uint8_t lun) {
     _msc_dev->_lun_info[lun].unit_ready = _msc_dev->_lun_info[lun].ready_cb();
   }
 
-  bool const ret = _msc_dev->_lun_info[lun].unit_ready;
-
-  if (!ret) {
-    // Addition Sense: 3A-00 is NOT FOUND
-    tud_msc_set_sense(lun, SCSI_SENSE_NOT_READY, 0x3a, 0x00);
-  }
-
-  return ret;
+  return _msc_dev->_lun_info[lun].unit_ready;
 }
 
 // Callback invoked to determine disk's size
@@ -189,9 +188,13 @@ void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count,
 int32_t tud_msc_scsi_cb(uint8_t lun, const uint8_t scsi_cmd[16], void *buffer,
                         uint16_t bufsize) {
   const void *response = NULL;
-  int32_t resplen = 0;
+  uint16_t resplen = 0;
 
   switch (scsi_cmd[0]) {
+  case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
+    // Host is about to read/write etc ... better not to disconnect disk
+    resplen = 0;
+    break;
 
   default:
     // Set Sense = Invalid Command Operation
@@ -209,22 +212,11 @@ int32_t tud_msc_scsi_cb(uint8_t lun, const uint8_t scsi_cmd[16], void *buffer,
   }
 
   // copy response to stack's buffer if any
-  if (response && (resplen > 0)) {
+  if (response && resplen) {
     memcpy(buffer, response, resplen);
   }
 
   return resplen;
-}
-
-// Callback invoked on start/stop
-bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start,
-                           bool load_eject) {
-  if (!(_msc_dev && _msc_dev->_lun_info[lun].start_stop_cb)) {
-    return true;
-  }
-
-  return _msc_dev->_lun_info[lun].start_stop_cb(power_condition, start,
-                                                load_eject);
 }
 
 // Callback invoked when received READ10 command.
@@ -264,16 +256,6 @@ void tud_msc_write10_complete_cb(uint8_t lun) {
   return _msc_dev->_lun_info[lun].fl_cb();
 }
 
-// Invoked to check if device is writable as part of SCSI WRITE10
-// Default mode is writable
-bool tud_msc_is_writable_cb(uint8_t lun) {
-  if (!(_msc_dev && _msc_dev->_lun_info[lun].writable_cb)) {
-    return true;
-  }
-
-  return _msc_dev->_lun_info[lun].writable_cb();
-}
-
 } // extern "C"
 
-#endif // CFG_TUD_ENABLED
+#endif // TUSB_OPT_DEVICE_ENABLED

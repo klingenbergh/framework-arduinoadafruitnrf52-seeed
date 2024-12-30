@@ -1,59 +1,34 @@
 /*
     This example demonstrates the use of multiple USB CDC/ACM "Virtual
-    Serial" ports
+    Serial" ports, using Ha Thach's TinyUSB library, and the port of
+    that library to the Arduino environment
+
+    https://github.com/hathach/tinyusb
+    https://github.com/adafruit/Adafruit_TinyUSB_Arduino
 
     Written by Bill Westfield (aka WestfW), June 2021.
     Copyright 2021 by Bill Westfield
     MIT license, check LICENSE for more information
+
+    The example creates three virtual serial ports.  Text entered on
+    any of the ports will be echoed to the all ports.
+
+    The max number of CDC ports (CFG_TUD_CDC) has to be changed to at
+    least 2, changed in the core tusb_config.h file.
 */
-
-
-/* The example creates two virtual serial ports. Text entered on
- * any of the ports will be echoed to the all ports with
- *  - all lower case in port0 (Serial)
- *  - all upper case in port1
- *
- * Requirement:
- *  The max number of CDC ports (CFG_TUD_CDC) has to be changed to at least 2.
- *  Config file is located in Adafruit_TinyUSB_Arduino/src/arduino/ports/{platform}/tusb_config_{platform}.h
- *  where platform is one of: nrf, rp2040, samd
- *
- *  NOTE: Currnetly multiple CDCs on ESP32-Sx is not yet supported.
- *  An PR to update core/esp32/USBCDC and/or pre-built libusb are needed.
- *  We would implement this later when we could.
- */
 
 #include <Adafruit_TinyUSB.h>
 
 #define LED LED_BUILTIN
 
-// Create 2nd instance of CDC Ports.
-#ifdef ARDUINO_ARCH_ESP32
-  #error "Currently multiple CDCs on ESP32-Sx is not yet supported. An PR to update core/esp32/USBCDC and/or pre-built libusb are needed."
-  // for ESP32, we need to specify instance number when declaring object
-  Adafruit_USBD_CDC USBSer1(1);
-#else
-  Adafruit_USBD_CDC USBSer1;
-#endif
+// Create extra USB Serial Ports.  "Serial" is already created.
+Adafruit_USBD_CDC USBSer1;
 
 void setup() {
   pinMode(LED, OUTPUT);
 
+  // start up all of the USB Vitual ports, and wait for them to enumerate.
   Serial.begin(115200);
-
-  // check to see if multiple CDCs are enabled
-  if ( CFG_TUD_CDC < 2 ) {
-    digitalWrite(LED, HIGH); // LED on for error indicator
-
-    while(1) {
-      Serial.printf("CFG_TUD_CDC must be at least 2, current value is %u\n", CFG_TUD_CDC);
-      Serial.println("  Config file is located in Adafruit_TinyUSB_Arduino/src/arduino/ports/{platform}/tusb_config_{platform}.h");
-      Serial.println("  where platform is one of: nrf, rp2040, samd");
-      delay(1000);
-    }
-  }
-
-  // initialize 2nd CDC interface
   USBSer1.begin(115200);
 
   while (!Serial || !USBSer1) {

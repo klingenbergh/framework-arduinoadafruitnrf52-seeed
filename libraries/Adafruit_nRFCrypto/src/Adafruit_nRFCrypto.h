@@ -1,4 +1,4 @@
-/*
+/* 
  * The MIT License (MIT)
  *
  * Copyright (c) 2020 Ha Thach (tinyusb.org) for Adafruit Industries
@@ -30,7 +30,6 @@
 
 #include "nRFCrypto_Random.h"
 #include "nRFCrypto_Hash.h"
-#include "nRFCrypto_Hmac.h"
 #include "ecc/nRFCrypto_ECC.h"
 
 class Adafruit_nRFCrypto

@@ -23,6 +23,19 @@
  */
 
 #include "Adafruit_nRFCrypto.h"
+#include "nrf_cc310/include/crys_hmac.h"
+
+class nRFCrypto_Hmac {
+public:
+    nRFCrypto_Hmac(void);
+    bool begin(CRYS_HASH_OperationMode_t mode, uint8_t *key_ptr, uint16_t keySize);
+    bool update(uint8_t data[], size_t size);
+    uint8_t end(uint32_t result[16]);
+
+private:
+    uint8_t _digest_size;
+    CRYS_HMACUserContext_t _context;
+};
 
 uint8_t digestSize(CRYS_HASH_OperationMode_t mode) {
     switch (mode) {
