@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 - 2020, Nordic Semiconductor ASA
+ * Copyright (c) 2017 - 2018, Nordic Semiconductor ASA
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,12 +32,6 @@
 #ifndef NRFX_GLUE_H__
 #define NRFX_GLUE_H__
 
-// THIS IS A TEMPLATE FILE.
-// It should be copied to a suitable location within the host environment into
-// which nrfx is integrated, and the following macros should be provided with
-// appropriate implementations.
-// And this comment should be removed from the customized file.
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -60,14 +54,14 @@ extern "C" {
 /**
  * @brief Macro for placing a runtime assertion.
  *
- * @param expression Expression to be evaluated.
+ * @param expression  Expression to evaluate.
  */
 #define NRFX_ASSERT(expression)
 
 /**
  * @brief Macro for placing a compile time assertion.
  *
- * @param expression Expression to be evaluated.
+ * @param expression  Expression to evaluate.
  */
 #define NRFX_STATIC_ASSERT(expression)
 
@@ -76,8 +70,8 @@ extern "C" {
 /**
  * @brief Macro for setting the priority of a specific IRQ.
  *
- * @param irq_number IRQ number.
- * @param priority   Priority to be set.
+ * @param irq_number  IRQ number.
+ * @param priority    Priority to set.
  */
 #define NRFX_IRQ_PRIORITY_SET(irq_number, priority) _NRFX_IRQ_PRIORITY_SET(irq_number, priority)
 static inline void _NRFX_IRQ_PRIORITY_SET(IRQn_Type irq_number,
@@ -90,7 +84,7 @@ static inline void _NRFX_IRQ_PRIORITY_SET(IRQn_Type irq_number,
 /**
  * @brief Macro for enabling a specific IRQ.
  *
- * @param irq_number IRQ number.
+ * @param irq_number  IRQ number.
  */
 #define NRFX_IRQ_ENABLE(irq_number)  _NRFX_IRQ_ENABLE(irq_number)
 static inline void _NRFX_IRQ_ENABLE(IRQn_Type irq_number)
@@ -102,7 +96,7 @@ static inline void _NRFX_IRQ_ENABLE(IRQn_Type irq_number)
 /**
  * @brief Macro for checking if a specific IRQ is enabled.
  *
- * @param irq_number IRQ number.
+ * @param irq_number  IRQ number.
  *
  * @retval true  If the IRQ is enabled.
  * @retval false Otherwise.
@@ -116,7 +110,7 @@ static inline bool _NRFX_IRQ_IS_ENABLED(IRQn_Type irq_number)
 /**
  * @brief Macro for disabling a specific IRQ.
  *
- * @param irq_number IRQ number.
+ * @param irq_number  IRQ number.
  */
 #define NRFX_IRQ_DISABLE(irq_number)  _NRFX_IRQ_DISABLE(irq_number)
 static inline void _NRFX_IRQ_DISABLE(IRQn_Type irq_number)
@@ -127,7 +121,7 @@ static inline void _NRFX_IRQ_DISABLE(IRQn_Type irq_number)
 /**
  * @brief Macro for setting a specific IRQ as pending.
  *
- * @param irq_number IRQ number.
+ * @param irq_number  IRQ number.
  */
 #define NRFX_IRQ_PENDING_SET(irq_number) _NRFX_IRQ_PENDING_SET(irq_number)
 static inline void _NRFX_IRQ_PENDING_SET(IRQn_Type irq_number)
@@ -138,7 +132,7 @@ static inline void _NRFX_IRQ_PENDING_SET(IRQn_Type irq_number)
 /**
  * @brief Macro for clearing the pending status of a specific IRQ.
  *
- * @param irq_number IRQ number.
+ * @param irq_number  IRQ number.
  */
 #define NRFX_IRQ_PENDING_CLEAR(irq_number) _NRFX_IRQ_PENDING_CLEAR(irq_number)
 static inline void _NRFX_IRQ_PENDING_CLEAR(IRQn_Type irq_number)
@@ -158,10 +152,14 @@ static inline bool _NRFX_IRQ_IS_PENDING(IRQn_Type irq_number)
     return (NVIC_GetPendingIRQ(irq_number) == 1);
 }
 
-/** @brief Macro for entering into a critical section. */
+/**
+ * @brief Macro for entering into a critical section.
+ */
 #define NRFX_CRITICAL_SECTION_ENTER()
 
-/** @brief Macro for exiting from a critical section. */
+/**
+ * @brief Macro for exiting from a critical section.
+ */
 #define NRFX_CRITICAL_SECTION_EXIT()
 
 //------------------------------------------------------------------------------
@@ -184,75 +182,6 @@ static inline bool _NRFX_IRQ_IS_PENDING(IRQn_Type irq_number)
 
 //------------------------------------------------------------------------------
 
-/** @brief Atomic 32-bit unsigned type. */
-#define nrfx_atomic_t
-
-/**
- * @brief Macro for storing a value to an atomic object and returning its previous value.
- *
- * @param[in] p_data Atomic memory pointer.
- * @param[in] value  Value to store.
- *
- * @return Previous value of the atomic object.
- */
-#define NRFX_ATOMIC_FETCH_STORE(p_data, value)
-
-/**
- * @brief Macro for running a bitwise OR operation on an atomic object and returning its previous value.
- *
- * @param[in] p_data Atomic memory pointer.
- * @param[in] value  Value of the second operand in the OR operation.
- *
- * @return Previous value of the atomic object.
- */
-#define NRFX_ATOMIC_FETCH_OR(p_data, value)
-
-/**
- * @brief Macro for running a bitwise AND operation on an atomic object
- *        and returning its previous value.
- *
- * @param[in] p_data Atomic memory pointer.
- * @param[in] value  Value of the second operand in the AND operation.
- *
- * @return Previous value of the atomic object.
- */
-#define NRFX_ATOMIC_FETCH_AND(p_data, value)
-
-/**
- * @brief Macro for running a bitwise XOR operation on an atomic object
- *        and returning its previous value.
- *
- * @param[in] p_data Atomic memory pointer.
- * @param[in] value  Value of the second operand in the XOR operation.
- *
- * @return Previous value of the atomic object.
- */
-#define NRFX_ATOMIC_FETCH_XOR(p_data, value)
-
-/**
- * @brief Macro for running an addition operation on an atomic object
- *        and returning its previous value.
- *
- * @param[in] p_data Atomic memory pointer.
- * @param[in] value  Value of the second operand in the ADD operation.
- *
- * @return Previous value of the atomic object.
- */
-#define NRFX_ATOMIC_FETCH_ADD(p_data, value)
-
-/**
- * @brief Macro for running a subtraction operation on an atomic object
- *        and returning its previous value.
- *
- * @param[in] p_data Atomic memory pointer.
- * @param[in] value  Value of the second operand in the SUB operation.
- *
- * @return Previous value of the atomic object.
- */
-#define NRFX_ATOMIC_FETCH_SUB(p_data, value)
-
-//------------------------------------------------------------------------------
-
 /**
  * @brief When set to a non-zero value, this macro specifies that the
  *        @ref nrfx_error_codes and the @ref nrfx_err_t type itself are defined
@@ -263,22 +192,24 @@ static inline bool _NRFX_IRQ_IS_PENDING(IRQn_Type irq_number)
 
 //------------------------------------------------------------------------------
 
-/** @brief Bitmask that defines DPPI channels that are reserved for use outside of the nrfx library. */
-#define NRFX_DPPI_CHANNELS_USED  0
-
-/** @brief Bitmask that defines DPPI groups that are reserved for use outside of the nrfx library. */
-#define NRFX_DPPI_GROUPS_USED    0
-
-/** @brief Bitmask that defines PPI channels that are reserved for use outside of the nrfx library. */
+/**
+ * @brief Bitmask defining PPI channels reserved to be used outside of nrfx.
+ */
 #define NRFX_PPI_CHANNELS_USED  0
 
-/** @brief Bitmask that defines PPI groups that are reserved for use outside of the nrfx library. */
+/**
+ * @brief Bitmask defining PPI groups reserved to be used outside of nrfx.
+ */
 #define NRFX_PPI_GROUPS_USED    0
 
-/** @brief Bitmask that defines EGU instances that are reserved for use outside of the nrfx library. */
-#define NRFX_EGUS_USED          0
+/**
+ * @brief Bitmask defining SWI instances reserved to be used outside of nrfx.
+ */
+#define NRFX_SWI_USED           0
 
-/** @brief Bitmask that defines TIMER instances that are reserved for use outside of the nrfx library. */
+/**
+ * @brief Bitmask defining TIMER instances reserved to be used outside of nrfx.
+ */
 #define NRFX_TIMERS_USED        0
 
 /** @} */

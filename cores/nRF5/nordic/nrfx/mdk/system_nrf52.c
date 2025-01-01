@@ -23,6 +23,8 @@ NOTICE: This file has been modified by Nordic Semiconductor ASA.
 /* NOTE: Template files (including this one) are application specific and therefore expected to
    be copied into the application project folder prior to its use! */
 
+#ifdef NRF52832_XXAA
+
 #include <stdint.h>
 #include <stdbool.h>
 #include "nrf.h"
@@ -195,7 +197,7 @@ void SystemInit(void)
             NRF_UICR->PSELRESET[1] = 21;
             while (NRF_NVMC->READY == NVMC_READY_READY_Busy){}
             NRF_NVMC->CONFIG = NVMC_CONFIG_WEN_Ren << NVMC_CONFIG_WEN_Pos;
-            while (NRF_NVMC->READY == NVMC_READY_READY_Busy){}
+            while (NRF_NVMC->READY == NVMC_READY_READY_Busy){ }
             NVIC_SystemReset();
         }
     #endif
@@ -205,3 +207,5 @@ void SystemInit(void)
 
 
 /*lint --flb "Leave library region" */
+
+#endif

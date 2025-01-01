@@ -24,7 +24,7 @@ body:
 
   - type: input
     attributes:
-      label: Arduino IDE version
+      label: IDE version
       placeholder: e.g Arduino 1.8.15
     validations:
       required: true
@@ -38,7 +38,7 @@ body:
       
   - type: input
     attributes:
-      label: ArduinoCore version
+      label: BSP version
       description: Can be found under "Board Manager" menu
     validations:
       required: true
@@ -52,20 +52,10 @@ body:
 
   - type: textarea
     attributes:
-      label: Sketch as ATTACHED TXT
+      label: Sketch
       placeholder: |
         e.g examples/MassStorage/msc_ramdisk.
         If it is custom sketch, please provide it as **ATTACHED** files or link to it.
-        Pasting raw long code that hurts readability can get your issue **closed**
-    validations:
-      required: true
-
-  - type: textarea
-    attributes:
-      label: Compiled Log as ATTACHED TXT
-      placeholder: |
-        Compiled log from Arduino IDE as **ATTACHED** txt.
-        Pasting raw long log that hurts readability can get your issue **closed**
     validations:
       required: true
 
