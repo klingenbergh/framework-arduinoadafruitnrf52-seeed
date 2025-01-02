@@ -33,6 +33,7 @@
 #define NRF_CLOCK_H__
 
 #include <nrfx.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

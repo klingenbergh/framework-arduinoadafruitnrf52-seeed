@@ -489,7 +489,7 @@
 // <e> NRFX_NFCT_ENABLED - nrfx_nfct - NFCT peripheral driver
 //==========================================================
 #ifndef NRFX_NFCT_ENABLED
-#define NRFX_NFCT_ENABLED 1
+#define NRFX_NFCT_ENABLED 0
 #endif
 // <o> NRFX_NFCT_DEFAULT_CONFIG_IRQ_PRIORITY  - Interrupt priority
 
@@ -503,7 +503,7 @@
 // <7=> 7
 
 #ifndef NRFX_NFCT_DEFAULT_CONFIG_IRQ_PRIORITY
-#define NRFX_NFCT_DEFAULT_CONFIG_IRQ_PRIORITY 5
+#define NRFX_NFCT_DEFAULT_CONFIG_IRQ_PRIORITY 7
 #endif
 
 // <o> NRFX_NFCT_CONFIG_TIMER_INSTANCE_ID - Timer instance used for workarounds in the driver.
