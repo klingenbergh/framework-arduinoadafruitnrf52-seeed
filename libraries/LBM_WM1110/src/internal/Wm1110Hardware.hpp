@@ -60,6 +60,8 @@ private:
     nrf_hal::Spim<SPIM_ID, LR1110_SPI_SCK_PIN, LR1110_SPI_MOSI_PIN, LR1110_SPI_MISO_PIN, NRF_SPIM_FREQ_16M> spim_;
     RadioMode radioMode_;
 
+    nrf_hal::GpioOutputPin<LR1110_BUSY_PIN, 0> outbusy_;
+
 public:
     nrf_hal::Flash flash;
     nrf_hal::RtcTimer<RTC_TIMER_ID> rtcTimer;
@@ -90,7 +92,7 @@ public:
     void transfer(const uint8_t* txData, uint8_t* rxData, size_t length);
     void changedToSleep();
     void wakeupAndWaitForReady();
-
+    void enterBootloaderMode();
 };
 
 ////////////////////////////////////////////////////////////////////////////////

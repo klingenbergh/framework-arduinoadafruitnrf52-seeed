@@ -125,5 +125,16 @@ void Wm1110Hardware::wakeupAndWaitForReady()
 
     while (busy_.read()){}  // Seeed: Spin
 }
+void Wm1110Hardware::enterBootloaderMode()
+{
+    busy_.end();
+    outbusy_.begin();
+    outbusy_.write(0);
+    reset();
+    nrf_hal::System::delayMs(500);
+    outbusy_.end();
+    busy_.begin();
+    nrf_hal::System::delayMs( 100 );
 
+}
 ////////////////////////////////////////////////////////////////////////////////
